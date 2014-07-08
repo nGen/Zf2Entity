@@ -2,7 +2,7 @@
 return array(
     'view_manager' => array(
         'template_path_stack' => array(
-            'view_location' => __DIR__ . '/../view',
+            'zf2entity' => __DIR__ . '/../view',
         ),
     ),
     'controllers' => array(
