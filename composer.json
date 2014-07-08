@@ -1,0 +1,34 @@
+{
+    "name": "ngen/zf2entity",
+    "description": "Entity Management system for ZF2 Module Developement.",
+    "type": "Library",
+	"license": "GPL V2",
+    "keywords": [
+        "zf2",
+		"ngen",
+        "crud",
+        "simplify",
+        "entity management",
+        "module development",
+    ],
+    "authors": [
+        {
+            "name": "Starx",
+            "email": "mail@mrnepal.com",
+            "homepage": "http://mrnepal.com"
+        }
+    ],
+    "require": {
+        "zf-commons/zfc-base": "0.*",
+        "ngen/zfc": "dev-master",
+        "neilime/zf2-twb-bundle": "2.*@stable"
+    },
+    "autoload": {
+        "psr-0": {
+            "nGen\\Zf2Entity": "src/"
+        },
+        "classmap": [
+            "./Module.php"
+        ]
+    }
+}

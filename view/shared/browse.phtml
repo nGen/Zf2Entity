@@ -1,0 +1,237 @@
+<?php
+    $this -> headTitle($title);
+    $params = $route['params'];
+    $options = $route['options'];
+?>
+<h1><?php echo $this -> escapeHtml(isset($pluralTitle) ? $pluralTitle: $title); ?></h1>
+
+<p>
+    <?php $params['action'] = 'add'; ?>
+    <a class="btn btn-primary btn-sm" href="<?php echo $this -> url($mainRouteName, $params, $options); ?>">Add new <?php echo $title; ?></a>
+</p>
+<?php
+
+    $uri = $_SERVER['REQUEST_URI'];
+    $params['action'] = 'index';
+    $indexLink = $this -> url($mainRouteName, $params);
+
+    $options['query']['browse'] = 'disabled';
+    $disabledLink = $this -> url($mainRouteName, $params, $options);
+
+    $options['query']['browse'] = 'trash';
+    $trashLink = $this -> url($mainRouteName, $params, $options);
+
+    $options['query']['browse'] = 'all';
+    $allLink = $this -> url($mainRouteName, $params, $options);
+
+    $params['action'] = 'delete-all';
+    $deleteAllLink = $this -> url($mainRouteName, $params);
+?>
+
+<div class="row">
+    <div class="row-12">
+        <ul class="nav nav-pills navbar-right">
+            <li class="<?php echo $uri == $indexLink ? 'active' : '' ?>"><a href="<?php echo $indexLink; ?>">
+                <span class="glyphicon glyphicon-ok-circle"></span>Active
+            </a></li>
+            <li class="<?php echo $uri == $disabledLink ? 'active' : '' ?>"><a href="<?php echo $disabledLink; ?>">
+                <span class="glyphicon glyphicon-ban-circle"></span>Disabled
+            </a></li>
+            <li class="<?php echo $uri == $trashLink ? 'active' : '' ?>"><a href="<?php echo $trashLink; ?>">
+                <span class="glyphicon glyphicon-trash"></span>Trash
+            </a></li>
+            <li class="<?php echo $uri == $allLink ? 'active' : '' ?>"><a href="<?php echo $allLink; ?>">All</a></li>
+            <li class="dropdown">
+                <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                  Actions <span class="caret"></span>
+                </a>
+                <ul class="dropdown-menu">
+                    <li><a href="<?php echo $deleteAllLink; ?>">Delete All</a></li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<?php 
+if($rows -> getTotalItemCount() > 0) : 
+    if($manager['thumbnail_field']['active'] == true) {
+        $thumbnail_details = $manager['thumbnail_field']['details'];
+    }
+    if($manager['title_field']['active'] == true) {
+        $title_details = $manager['title_field']['details'];
+    }
+?>  
+<div class="table-responsive">
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th></th>
+            <?php 
+
+            if($manager['thumbnail_field']['active'] == true) { 
+                echo "<th>{$thumbnail_details['label']}</th>";
+            }
+
+            if($manager['title_field']['active'] == true) {
+                echo "<th>{$title_details['label']}</th>";
+            }
+
+            ?>
+            <th>&nbsp;</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php 
+        foreach($rows as $row): 
+            $rowClass = array();
+            if($row -> deleted == 1) $rowClass[] = 'danger';
+            if($row -> status == 0) $rowClass[] = 'warning';
+
+            $options = $route['options'];
+            $params['id'] = $row -> id;
+            $params['action'] = 'unlock';
+            $unlock_link = $this -> url($mainRouteName, $params, $options);
+          
+            $params['action'] = 'edit';
+            $edit_link = $this -> url($mainRouteName, $params, $options);
+          
+            $params['action'] = 'delete';
+            $delete_link = $this -> url($mainRouteName, $params, $options);
+          
+            $params['action'] = 'undelete';
+            $undelete_link = $this -> url($mainRouteName, $params, $options);
+          
+            $params['action'] = 'delete-permanent';
+            $deletePermanent_link = $this -> url($mainRouteName, $params, $options);
+          
+            $params['action'] = 'enable';
+            $enable_link = $this -> url($mainRouteName, $params, $options);
+          
+            $params['action'] = 'disable';
+            $disable_link = $this -> url($mainRouteName, $params, $options);
+          
+            $params['action'] = 'move-up';
+            $moveUp_link = $this -> url($mainRouteName, $params, $options);
+          
+            $params['action'] = 'move-down';
+            $moveDown_link = $this -> url($mainRouteName, $params, $options);
+          
+            //$params['action'] = '';
+            //$_link = $this -> url($mainRouteName, $params, $options);
+        ?>
+        <tr class="<?php echo implode(" ", $rowClass); ?>" data-id="<?php echo $row -> id; ?>">
+            <td>
+            <?php
+                if($row -> locked == 1) {
+                    echo '<a href="'.$unlock_link.'" alt="Unlock"><span class="glyphicon glyphicon-lock"></span></a>';
+                }
+            ?>
+            <?php 
+                if($manager['thumbnail_field']['active'] == true) { 
+                    $imgThumbnail = str_replace("source/", "thumbs/", $row -> $thumbnail_details['field']);
+                    echo "<td><img src=\"$imgThumbnail\" /></td>";
+                }
+                if($manager['title_field']['active'] == true) {
+                    echo "<td>".$this -> escapeHtml($row -> $title_details['field'])."</td>";
+                }
+            ?>
+            <td>
+                <?php
+                //If custom links need to be provided generate them
+                if(isset($manager['records']['links']) && count($manager['records']['links'])) {
+                    $extra_links = $manager['records']['links'];
+                    foreach($extra_links as $extra_link) {
+
+                        if(isset($extra_link['route'])) {
+                            $route = $extra_link['route'];
+                            $rParams = array();
+
+                            if($route['merge_current_params'] === true) {
+                                $tParams = $params;    
+                            }
+                            
+                            if(isset($route['params']) && count($route['params'])) {
+                                foreach($route['params'] as $r_param_name => $r_params) {
+                                    if(isset($r_params['type']) && isset($r_params['value'])) {
+                                        switch($r_params['type']) {
+                                            case "static":
+                                                $r_param_value = $r_params['value'];
+                                            break;
+                                            case "from_record":
+                                                $r_param_value = $row -> $r_params['value'];
+                                            break;
+                                            case "unlink":
+                                                unset($tParams[$r_params['value']]);
+                                            break;
+                                        }
+                                        $rParams[$r_param_name] = $r_param_value;
+                                    } else continue;
+                                }
+                            }
+                            
+                            if($route['merge_current_params'] === true) {
+                                $rParams = array_merge($tParams, $rParams);
+                            }
+
+                            $rLink = $this -> url($route['name'], $rParams);
+                        }
+                        echo '<a class="btn btn-default btn-sm" href="'.$rLink.'">'.$extra_link['label'].'</a> ';
+                    }
+                }
+
+                ?>
+                <a class="btn btn-default btn-sm" href="<?php echo $edit_link; ?>">
+                    <span class="glyphicon glyphicon-pencil"></span>Edit</a>
+                <?php if($row -> deleted == '0') { ?>
+                    <a class="btn btn-default btn-sm" href="<?php echo $delete_link; ?>">
+                    <span class="glyphicon glyphicon-trash"></span>Delete</a>
+                <?php } else { ?>
+                    <a class="btn btn-default btn-sm" href="<?php echo $undelete_link; ?>">
+                        <span class="glyphicon glyphicon-transfer"></span>UnDelete</a>
+                    <a class="btn btn-default btn-sm" href="<?php echo $deletePermanent_link; ?>">
+                        <span class="glyphicon glyphicon-fire"></span>Delete Permanenty</a>
+                <?php } ?>
+
+                <?php if($row -> deleted != '1') { 
+                    if($row -> status == '0') { ?>
+                        <a class="btn btn-default btn-sm" href="<?php echo $enable_link; ?>">
+                        <span class="glyphicon glyphicon-thumbs-up"></span>Enable</a>
+                    <?php } else { ?>
+                        <a class="btn btn-default btn-sm" href="<?php echo $disable_link; ?>">
+                        <span class="glyphicon glyphicon-thumbs-down"></span>Disable</a>
+                    <?php } 
+                } ?>
+                <?php if($row -> status == '1' && $row -> deleted == '0') { ?>
+                    <a class="btn btn-default btn-sm" href="<?php echo $moveUp_link; ?>">
+                        <span class="glyphicon glyphicon-arrow-up"></span>Move Up</a>
+                    <a class="btn btn-default btn-sm" href="<?php echo $moveDown_link; ?>">
+                        <span class="glyphicon glyphicon-arrow-down"></span>Move Down</a>
+                <?php } ?>
+
+            </td>
+        </tr>
+        <?php endforeach; ?>
+    </tbody>
+</table>
+</div>
+
+<?php
+    $params['action'] = 'index';
+    unset($params['id']);
+    echo $this->paginationControl(
+        $rows,
+        // the scrolling style
+        'sliding',
+        // the partial to use to render the control
+        array('partial/paginator.phtml', 'Application'),
+        // the route to link to when a user clicks a control link
+        array(
+            'route' => $mainRouteName,
+            'params' => $params, 
+            'options' => $options
+        )
+    );
+else:
+    echo "<div class=\"well well-sm\">No Records Found</div>";
+endif;
