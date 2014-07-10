@@ -49,10 +49,7 @@
                 } else continue;
             }
         }
-
-        if(isset($route['merge_current_params']) && $route['merge_current_params'] === true) {
-            $rParams = array_merge($params, $rParams);
-        }
+        $rParams = array_merge($params, $rParams);
 
         $rOptions = array();
         if(isset($route['options']) && count($route['options'])) {
@@ -82,7 +79,6 @@
             }
         }
         $rOptions = array_merge($options, $rOptions);
-
         return $view -> url($route_name, $rParams, $rOptions);          
 
     }
