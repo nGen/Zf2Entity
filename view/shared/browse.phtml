@@ -49,7 +49,10 @@
                 } else continue;
             }
         }
-        $rParams = array_merge($params, $rParams);
+
+        if(!isset($route['merge_current_params']) || (isset($route['merge_current_params']) && $route['merge_current_params'] !== false)) {
+            $rParams = array_merge($params, $rParams);
+        }
 
         $rOptions = array();
         if(isset($route['options']) && count($route['options'])) {
@@ -78,7 +81,9 @@
                 $rOptions[$rKey] = $r_type;
             }
         }
-        $rOptions = array_merge($options, $rOptions);
+        if(!isset($route['merge_current_options']) || (isset($route['merge_current_options']) && $route['merge_current_options'] !== false)) {
+            $rOptions = array_merge($options, $rOptions);
+        }
         return $view -> url($route_name, $rParams, $rOptions);          
 
     }

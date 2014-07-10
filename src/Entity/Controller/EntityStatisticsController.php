@@ -31,6 +31,7 @@ abstract class EntityStatisticsController extends AbstractActionController {
 						'params' => array(
 							'action' => array('type' => 'static', 'value' => 'index',),
 						),
+						'merge_current_options' => false
 					),
 					'links' => array(
 						"move-down" => array(
