@@ -11,15 +11,12 @@
     <a class="btn btn-primary btn-sm" href="<?php echo $this -> url($mainRouteName, $params, $options); ?>">Add new <?php echo $title; ?></a>
 </p>
 <?php
-    $GLOBALS['mainRouteName'] = $mainRouteName;
-    if(isset($subRouteName)) $GLOBALS['subRouteName'] = $subRouteName;
     function getRouteLink($view, $route, $params, $options, $record = false) {
 
         if(is_array($route['name'])) {
             switch($route['name']['type']) {
                 case "from_view":
-                    global ${$route['name']['value']};
-                    $route_name = ${$route['name']['value']};
+                    $route_name = $view -> $route['name']['value'];
                 break;
             }
         } else { 
@@ -29,7 +26,8 @@
         $rParams = array();
         if(isset($route['params']) && count($route['params'])) {
             foreach($route['params'] as $r_param_name => $r_params) {
-                if(isset($r_params['type']) && isset($r_params['value'])) {
+                if(isset($r_params['type']) && ($r_params['type'] == 'unset' || isset($r_params['value']))) {
+                    $r_param_value = null;
                     switch($r_params['type']) {
                         case "static":
                             $r_param_value = $r_params['value'];
@@ -38,14 +36,13 @@
                             $r_param_value = $record -> $r_params['value'];
                         break;
                         case "from_view":
-                            global ${$r_params['value']};
-                            $r_param_value = ${$r_params['value']};
+                            $r_param_value = $view -> $r_params['value'];
                         break;
-                        case "unlink":
-                            unset($params[$r_params['value']]);
+                        case "unset":
+                            unset($params[$r_param_name]);
                         break;
                     }
-                    $rParams[$r_param_name] = $r_param_value;
+                    if($r_param_value) $rParams[$r_param_name] = $r_param_value;
                 } else continue;
             }
         }
@@ -54,12 +51,15 @@
             $rParams = array_merge($params, $rParams);
         }
 
+        
+
         $rOptions = array();
         if(isset($route['options']) && count($route['options'])) {
             foreach($route['options'] as $rKey => $rOptionType) {
                 $r_type = array();
                 foreach($rOptionType as $r_option_name => $r_options) {
-                    if(isset($r_options['type']) && isset($r_options['value'])) {
+                    if(isset($r_options['type']) && ($r_options['type'] == 'unset' || isset($r_params['value']))) {
+                        $r_option_value = null;
                         switch($r_options['type']) {
                             case "static":
                                 $r_option_value = $r_options['value'];
@@ -71,11 +71,11 @@
                                 global ${$r_options['value']};
                                 $r_option_value = ${$r_options['value']};
                             break;
-                            case "unlink":
-                                unset($options[$r_options['value']]);
+                            case "unset":
+                                unset($options[$r_option_name]);
                             break;
                         }
-                        $r_type[$r_option_name] = $r_option_value;
+                        if($r_option_value) $r_type[$r_option_name] = $r_option_value;
                     } else continue;
                 }
                 $rOptions[$rKey] = $r_type;
@@ -182,6 +182,8 @@ if($rows -> getTotalItemCount() > 0) :
             ?>
             <td>
                 <?php
+                $options = $route['options'];
+                $params = $route['params'];
                 $mode = $manager['modes'][$activeMode];
                 if(count($mode['links'])) {
                     $m_links = array_reverse($mode['links']);
@@ -193,6 +195,7 @@ if($rows -> getTotalItemCount() > 0) :
                                 $mLink = $mLink['case'][$value];
                             } else continue;
                         }
+
                         $link = getRouteLink($this, $mLink['route'], $params, $options, $row);
                         $links_html .= '<a class="btn btn-default btn-sm" href="'.$link.'">';
                         if(isset($mLink['glyph'])) $links_html .= '<span class="glyphicon glyphicon-'.$mLink['glyph'].'"></span>';
