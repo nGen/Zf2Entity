@@ -8,8 +8,7 @@ abstract class EntityStatisticsController extends AbstractActionController {
 
 	protected $mainService;
 	protected $messenger;
-	protected $defaultViewData = array(
-		'manager' => array(
+	protected $defaultManagerViewData = array(
 			'thumbnail_field' => array(
 				'active' => false,
 			),
@@ -20,7 +19,297 @@ abstract class EntityStatisticsController extends AbstractActionController {
 					'field' => 'title'
 				),
 			),
-		),
+			'modes' => array(
+				'active' => array(
+					'label' => 'Active',
+					'glyph' => 'ok-circle',
+					'route' => array(
+						'name' => array(
+							'type' => 'from_view',
+							'value' => 'mainRouteName',
+						),
+						'params' => array(
+							'action' => array('type' => 'static', 'value' => 'index',),
+						),
+					),
+					'links' => array(
+						"move-down" => array(
+							'label' => 'Move Down',
+							'glyph' => 'arrow-down',
+							'route' => array(
+								'name' => array('type' => 'from_view', 'value' => 'mainRouteName',),
+								'params' => array(
+									'action' => array('type' => 'static', 'value' => 'move-down',),
+									'id' => array('type' => 'from_record', 'value' => 'id',),
+								),
+							),
+						),
+						"move-up" => array(
+							'label' => 'Move Up',
+							'glyph' => 'arrow-up',
+							'route' => array(
+								'name' => array('type' => 'from_view', 'value' => 'mainRouteName',),
+								'params' => array(
+									'action' => array('type' => 'static', 'value' => 'move-up',),
+									'id' => array('type' => 'from_record', 'value' => 'id',),
+								),
+							),
+						),
+						"delete" => array(
+							'label' => 'Delete',
+							'glyph' => 'trash',
+							'route' => array(
+								'name' => array('type' => 'from_view', 'value' => 'mainRouteName',),
+								'params' => array(
+									'action' => array('type' => 'static', 'value' => 'delete',),
+									'id' => array('type' => 'from_record', 'value' => 'id',),
+								),
+							),
+						),
+						'status' => array(
+							'type' => 'from_conditional_record',
+							'value' => 'status',
+							'case' => array(
+								'0' => array(
+									'label' => 'Enable',
+									'glyph' => 'thumbs-up',
+									'route' => array(
+										'name' => array('type' => 'from_view', 'value' => 'mainRouteName',),
+										'params' => array(
+											'action' => array('type' => 'static', 'value' => 'enable',),
+											'id' => array('type' => 'from_record', 'value' => 'id',),
+										),
+								   	),
+								),
+								'1' => array(
+									'label' => 'Disable',
+									'glyph' => 'thumbs-down',
+									'route' => array(
+										'name' => array('type' => 'from_view', 'value' => 'mainRouteName',),
+										'params' => array(
+											'action' => array('type' => 'static', 'value' => 'disable',),
+											'id' => array('type' => 'from_record', 'value' => 'id',),
+										),
+									),
+								),
+							),
+						),
+						"edit" => array(
+							'label' => 'Edit',
+							'glyph' => 'pencil',
+							'route' => array(
+								'name' => array('type' => 'from_view', 'value' => 'mainRouteName',),
+								'params' => array(
+									'action' => array('type' => 'static', 'value' => 'edit',),
+									'id' => array('type' => 'from_record', 'value' => 'id',),
+								),
+							),
+						),			
+					),
+					
+				),
+				'disabled' => array(
+					'label' => 'Disabled',
+					'glyph' => 'ban-circle',
+					'route' => array(
+						'name' => array(
+							'type' => 'from_view',
+							'value' => 'mainRouteName',
+						),
+						'params' => array(
+							'action' => array('type' => 'static', 'value' => 'index',),
+						),
+						'options' => array(
+							'query' => array(
+								'browse' => array('type' => 'static', 'value' => 'disabled',),
+							),
+						),
+					),
+					'links' => array(
+						"delete" => array(
+							'label' => 'Delete',
+							'glyph' => 'trash',
+							'route' => array(
+								'name' => array('type' => 'from_view', 'value' => 'mainRouteName',),
+								'params' => array(
+									'action' => array('type' => 'static', 'value' => 'delete',),
+									'id' => array('type' => 'from_record', 'value' => 'id',),
+								),
+							),
+						),
+						'enable' => array(
+							'label' => 'Enable',
+							'glyph' => 'thumbs-up',
+							'route' => array(
+								'name' => array('type' => 'from_view', 'value' => 'mainRouteName',),
+								'params' => array(
+									'action' => array('type' => 'static', 'value' => 'enable',),
+									'id' => array('type' => 'from_record', 'value' => 'id',),
+								),
+							),
+						),
+						"edit" => array(
+							'label' => 'Edit',
+							'glyph' => 'pencil',
+							'route' => array(
+								'name' => array('type' => 'from_view', 'value' => 'mainRouteName',),
+								'params' => array(
+									'action' => array('type' => 'static', 'value' => 'edit',),
+									'id' => array('type' => 'from_record', 'value' => 'id',),
+								),
+							),
+						),	 
+					),
+				),
+				'trash' => array(
+					'label' => 'Trash',
+					'glyph' => 'trash',
+					'route' => array(
+						'name' => array(
+							'type' => 'from_view',
+							'value' => 'mainRouteName',
+						),
+						'params' => array(
+							'action' => array('type' => 'static', 'value' => 'index',),
+						),
+						'options' => array(
+							'query' => array(
+								'browse' => array('type' => 'static', 'value' => 'trash',),
+							),
+						),
+					),
+					'links' => array(
+						"delete-permanent" => array(
+							'label' => 'Delete Permanently',
+							'glyph' => 'fire',
+							'route' => array(
+								'name' => array('type' => 'from_view', 'value' => 'mainRouteName',),
+								'params' => array(
+									'action' => array('type' => 'static', 'value' => 'delete-permanent',),
+									'id' => array('type' => 'from_record', 'value' => 'id',),
+								),
+							),
+						),
+						"undelete" => array(
+							'label' => 'UnDelete',
+							'glyph' => 'trash',
+							'route' => array(
+								'name' => array('type' => 'from_view', 'value' => 'mainRouteName',),
+								'params' => array(
+									'action' => array('type' => 'static', 'value' => 'undelete',),
+									'id' => array('type' => 'from_record', 'value' => 'id',),
+								),
+							),
+						),		
+						"edit" => array(
+							'label' => 'Edit',
+							'glyph' => 'pencil',
+							'route' => array(
+								'name' => array('type' => 'from_view', 'value' => 'mainRouteName',),
+								'params' => array(
+									'action' => array('type' => 'static', 'value' => 'edit',),
+									'id' => array('type' => 'from_record', 'value' => 'id',),
+								),
+							),
+						),
+					),
+				),
+				'all' => array(
+					'label' => 'All',
+					'route' => array(
+						'name' => array(
+							'type' => 'from_view',
+							'value' => 'mainRouteName',
+						),
+						'params' => array(
+							'action' => array('type' => 'static', 'value' => 'index',),
+						),
+						'options' => array(
+							'query' => array(
+								'browse' => array('type' => 'static', 'value' => 'all',),
+							),
+						),
+					),
+					'links' => array(
+						'status' => array(
+							'type' => 'from_conditional_record',
+							'value' => 'status',
+							'case' => array(
+								'0' => array(
+									'label' => 'Enable',
+									'glyph' => 'thumbs-up',
+									'route' => array(
+										'name' => array('type' => 'from_view', 'value' => 'mainRouteName',),
+										'params' => array(
+											'action' => array('type' => 'static', 'value' => 'enable',),
+											'id' => array('type' => 'from_record', 'value' => 'id',),
+										),
+									),
+								),
+								'1' => array(
+									'label' => 'Disable',
+									'glyph' => 'thumbs-down',
+									'route' => array(
+										'name' => array('type' => 'from_view', 'value' => 'mainRouteName',),
+										'params' => array(
+											'action' => array('type' => 'static', 'value' => 'disable',),
+											'id' => array('type' => 'from_record', 'value' => 'id',),
+										),
+									),
+								),
+							),
+						),
+						'deletetion' => array(
+							'type' => 'from_conditional_record',
+							'value' => 'deleted',
+							'case' => array(
+								'0' => array(
+									'label' => 'Delete',
+									'glyph' => 'trash',
+									'route' => array(
+										'name' => array('type' => 'from_view', 'value' => 'mainRouteName',),
+										'params' => array(
+											'action' => array('type' => 'static', 'value' => 'delete',),
+											'id' => array('type' => 'from_record', 'value' => 'id',),
+										),
+									),
+								),
+								'1' => array(
+									'label' => 'UnDelete',
+									'glyph' => 'trash',
+									'route' => array(
+										'name' => array('type' => 'from_view', 'value' => 'mainRouteName',),
+										'params' => array(
+											'action' => array('type' => 'static', 'value' => 'undelete',),
+											'id' => array('type' => 'from_record', 'value' => 'id',),
+										),
+									),
+								),
+							),
+						),						
+						"edit" => array(
+							'label' => 'Edit',
+							'glyph' => 'pencil',
+							'route' => array(
+								'name' => array('type' => 'from_view', 'value' => 'mainRouteName',),
+								'params' => array(
+									'action' => array('type' => 'static', 'value' => 'edit',),
+									'id' => array('type' => 'from_record', 'value' => 'id',),
+								),
+							),
+						),
+					),
+				),
+			),
+	);
+
+	protected $defaultViewData = array(
+		'route' => array(
+			'params' => array(),
+			'options' => array(
+				'query' => array(),
+			),
+		)
 	);
 
 	public function __construct() {
@@ -46,8 +335,8 @@ abstract class EntityStatisticsController extends AbstractActionController {
 	protected function getViewModel($viewData = null) {
 		if(!$viewData) $viewData = $this -> viewData;		
 		$viewData = array_replace_recursive($this -> defaultViewData, $viewData);
-		$viewData['route']['params'] = $this -> params() -> fromRoute();
-		$viewData['route']['options']['query'] = $this -> params() -> fromQuery();
+		$viewData['route']['params'] = array_replace_recursive($this -> params() -> fromRoute(), $viewData['route']['params']);
+		$viewData['route']['options']['query'] = array_replace_recursive($this -> params() -> fromQuery(), $viewData['route']['options']['query']);
 		return new ViewModel($viewData);
 	}
 
@@ -66,21 +355,31 @@ abstract class EntityStatisticsController extends AbstractActionController {
 		$paginatedEntries -> setItemCountPerPage(10);
 
 		$this -> viewData['rows'] = $paginatedEntries;
-		$this -> viewData['title_field'] = $this -> mainService -> getTitleField();
+		$this -> viewData['manager'] = isset($this -> viewData['manager']) ? 
+			array_replace_recursive($this -> defaultManagerViewData, $this -> viewData['manager']) : 
+			$this -> defaultManagerViewData;
+			
 		$viewModel = $this -> getViewModel();
-        $viewModel -> setTemplate('shared/browse.phtml');
+		$viewModel -> setTemplate('shared/browse.phtml');
 		return $viewModel;
 	}
 
 	public function indexAction() {
+		$initStatus = $this -> init();
+
+		if($initStatus  !== true) { return $initStatus; }
+
 		return $this -> DefaultIndexAction();
 	}
 
 	public function deleteAction() {
-    	$id = (int) $this -> params() -> fromRoute('id', 0);
-        if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
-    		$response = $this -> mainService -> delete($id);
-    		if($response === true) {
+		$initStatus = $this -> init();
+		if($initStatus  !== true) { return $initStatus; }
+
+		$id = (int) $this -> params() -> fromRoute('id', 0);
+		if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
+			$response = $this -> mainService -> delete($id);
+			if($response === true) {
 				$this -> messenger -> addSuccessMessage($this -> viewData['title']." id: $id has been deleted."); 
 			} else {
 				$this -> messenger -> addErrorMessage("Error encountered while deleting {$this -> viewData['title']} with id: $id.");
@@ -90,13 +389,16 @@ abstract class EntityStatisticsController extends AbstractActionController {
 		}
 
 		return $this -> redirectToMain();
-    }
+	}
 
 	public function undeleteAction() {
-    	$id = (int) $this -> params() -> fromRoute('id', 0);
-        if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
-    		$response = $this -> mainService -> undelete($id);
-    		if($response === true) {
+		$initStatus = $this -> init();
+		if($initStatus  !== true) { return $initStatus; }
+
+		$id = (int) $this -> params() -> fromRoute('id', 0);
+		if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
+			$response = $this -> mainService -> undelete($id);
+			if($response === true) {
 				$this -> messenger -> addSuccessMessage($this -> viewData['title']." id: $id has been recovered."); 
 			} else {
 				$this -> messenger -> addErrorMessage("Error encountered while recovering {$this -> viewData['title']} with id: $id.");
@@ -105,9 +407,12 @@ abstract class EntityStatisticsController extends AbstractActionController {
 			$this -> messenger -> addErrorMessage("{$this -> viewData['title']} with id: $id was not found. It may have already been deleted.");
 		}
 		return $this -> redirectToMain();
-    }
+	}
 
 	public function deleteAllAction() {
+		$initStatus = $this -> init();
+		if($initStatus  !== true) { return $initStatus; }
+
 		$response = $this -> mainService -> deleteAll();
 		if($response === true) {
 			$this -> messenger -> addSuccessMessage("All ".$this -> viewData['pluralTitle']." has been deleted."); 
@@ -115,13 +420,16 @@ abstract class EntityStatisticsController extends AbstractActionController {
 			$this -> messenger -> addErrorMessage("Error encountered while deleting all {$this -> viewData['pluralTitle']}.");
 		}
 		return $this -> redirectToMain();
-    }    
+	}	
 
 	public function deletePermanentAction() {
-    	$id = (int) $this -> params() -> fromRoute('id', 0);
-        if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
-    		$response = $this -> mainService -> permanentDelete($id);
-    		if($response === true) {
+		$initStatus = $this -> init();
+		if($initStatus  !== true) { return $initStatus; }
+
+		$id = (int) $this -> params() -> fromRoute('id', 0);
+		if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
+			$response = $this -> mainService -> permanentDelete($id);
+			if($response === true) {
 				$this -> messenger -> addSuccessMessage($this -> viewData['title']." id: $id has been permanently deleted."); 
 			} else {
 				$this -> messenger -> addErrorMessage("Error encountered while deleting {$this -> viewData['title']} with id: $id.");
@@ -130,13 +438,16 @@ abstract class EntityStatisticsController extends AbstractActionController {
 			$this -> messenger -> addErrorMessage("{$this -> viewData['title']} with id: $id was not found. It may have already been deleted.");
 		}
 		return $this -> redirectToMain();
-    }
+	}
 
-    public function enableAction() {
-    	$id = (int) $this -> params() -> fromRoute('id', 0);
-        if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
-    		$response = $this -> mainService -> enable($id);
-    		if($response === true) {
+	public function enableAction() {
+		$initStatus = $this -> init();
+		if($initStatus  !== true) { return $initStatus; }
+
+		$id = (int) $this -> params() -> fromRoute('id', 0);
+		if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
+			$response = $this -> mainService -> enable($id);
+			if($response === true) {
 				$this -> messenger -> addSuccessMessage($this -> viewData['title']." id: $id has been enabled."); 
 			} else {
 				$this -> messenger -> addErrorMessage("Error encountered while enabling {$this -> viewData['title']} with id: $id.");
@@ -145,13 +456,16 @@ abstract class EntityStatisticsController extends AbstractActionController {
 			$this -> messenger -> addErrorMessage("{$this -> viewData['title']} with id: $id was not found. It may have already been deleted.");
 		}
 		return $this -> redirectToMain();
-    }
-    
-    public function disableAction() {
-    	$id = (int) $this -> params() -> fromRoute('id', 0);
-        if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
-    		$response = $this -> mainService -> disable($id);
-    		if($response === true) {
+	}
+	
+	public function disableAction() {
+		$initStatus = $this -> init();
+		if($initStatus  !== true) { return $initStatus; }
+
+		$id = (int) $this -> params() -> fromRoute('id', 0);
+		if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
+			$response = $this -> mainService -> disable($id);
+			if($response === true) {
 				$this -> messenger -> addSuccessMessage($this -> viewData['title']." id: $id has been disabled."); 
 			} else {
 				$this -> messenger -> addErrorMessage("Error encountered while disabling {$this -> viewData['title']} with id: $id.");
@@ -160,13 +474,16 @@ abstract class EntityStatisticsController extends AbstractActionController {
 			$this -> messenger -> addErrorMessage("{$this -> viewData['title']} with id: $id was not found. It may have already been deleted.");
 		}
 		return $this -> redirectToMain();
-    }    
+	}	
 
-    public function moveUpAction() {
-    	$id = (int) $this -> params() -> fromRoute('id', 0);
-        if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
-    		$response = $this -> mainService -> increaseOrder($id);
-    		if($response === true) {
+	public function moveUpAction() {
+		$initStatus = $this -> init();
+		if($initStatus  !== true) { return $initStatus; }
+
+		$id = (int) $this -> params() -> fromRoute('id', 0);
+		if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
+			$response = $this -> mainService -> increaseOrder($id);
+			if($response === true) {
 				$this -> messenger -> addSuccessMessage($this -> viewData['title']." id: $id has been moved up.");
 			} else {
 				$this -> messenger -> addErrorMessage("Error encountered while moving {$this -> viewData['title']} with id: $id.");
@@ -175,13 +492,16 @@ abstract class EntityStatisticsController extends AbstractActionController {
 			$this -> messenger -> addErrorMessage("{$this -> viewData['title']} with id: $id was not found. It may have already been deleted.");
 		}
 		return $this -> redirectToMain();
-    }
+	}
 
-    public function moveDownAction() {
-    	$id = (int) $this -> params() -> fromRoute('id', 0);
-        if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
-    		$response = $this -> mainService -> decreaseOrder($id);
-    		if($response === true) {
+	public function moveDownAction() {
+		$initStatus = $this -> init();
+		if($initStatus  !== true) { return $initStatus; }
+
+		$id = (int) $this -> params() -> fromRoute('id', 0);
+		if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
+			$response = $this -> mainService -> decreaseOrder($id);
+			if($response === true) {
 				$this -> messenger -> addSuccessMessage($this -> viewData['title']." id: $id has been moved down.");
 			} else {
 				$this -> messenger -> addErrorMessage("Error encountered while moving {$this -> viewData['title']} with id: $id.");
@@ -190,13 +510,16 @@ abstract class EntityStatisticsController extends AbstractActionController {
 			$this -> messenger -> addErrorMessage("{$this -> viewData['title']} with id: $id was not found. It may have already been deleted.");
 		}
 		return $this -> redirectToMain();
-    }
+	}
 
-    public function unlockAction() {
-    	$id = (int) $this -> params() -> fromRoute('id', 0);
-        if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
-    		$response = $this -> mainService -> unlock($id);
-    		if($response === true) {
+	public function unlockAction() {
+		$initStatus = $this -> init();
+		if($initStatus  !== true) { return $initStatus; }
+
+		$id = (int) $this -> params() -> fromRoute('id', 0);
+		if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
+			$response = $this -> mainService -> unlock($id);
+			if($response === true) {
 				$this -> messenger -> addSuccessMessage($this -> viewData['title']." id: $id has been unlocked.");
 			} else {
 				$this -> messenger -> addErrorMessage("Error encountered while moving {$this -> viewData['title']} with id: $id.");
@@ -205,7 +528,5 @@ abstract class EntityStatisticsController extends AbstractActionController {
 			$this -> messenger -> addErrorMessage("{$this -> viewData['title']} with id: $id was not found. It may have already been deleted.");
 		}
 		return $this -> redirectToMain();
-    }
-
-	
+	}	
 }

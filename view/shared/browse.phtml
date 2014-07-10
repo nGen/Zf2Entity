@@ -3,44 +3,112 @@
     $params = $route['params'];
     $options = $route['options'];
 ?>
-<h1><?php echo $this -> escapeHtml(isset($pluralTitle) ? $pluralTitle: $title); ?></h1>
+<h1><?php echo isset($pluralTitle) ? $pluralTitle: $title; ?></h1>
+<?php echo isset($subTitle) ? "<h5>{$subTitle}</h5>" : ''; ?>
 
 <p>
     <?php $params['action'] = 'add'; ?>
     <a class="btn btn-primary btn-sm" href="<?php echo $this -> url($mainRouteName, $params, $options); ?>">Add new <?php echo $title; ?></a>
 </p>
 <?php
+    $GLOBALS['mainRouteName'] = $mainRouteName;
+    if(isset($subRouteName)) $GLOBALS['subRouteName'] = $subRouteName;
+    function getRouteLink($view, $route, $params, $options, $record = false) {
 
-    $uri = $_SERVER['REQUEST_URI'];
-    $params['action'] = 'index';
-    $indexLink = $this -> url($mainRouteName, $params);
+        if(is_array($route['name'])) {
+            switch($route['name']['type']) {
+                case "from_view":
+                    global ${$route['name']['value']};
+                    $route_name = ${$route['name']['value']};
+                break;
+            }
+        } else { 
+            $route_name = $route['name'];
+        }
 
-    $options['query']['browse'] = 'disabled';
-    $disabledLink = $this -> url($mainRouteName, $params, $options);
+        $rParams = array();
+        if(isset($route['params']) && count($route['params'])) {
+            foreach($route['params'] as $r_param_name => $r_params) {
+                if(isset($r_params['type']) && isset($r_params['value'])) {
+                    switch($r_params['type']) {
+                        case "static":
+                            $r_param_value = $r_params['value'];
+                        break;
+                        case "from_record":
+                            $r_param_value = $record -> $r_params['value'];
+                        break;
+                        case "from_view":
+                            global ${$r_params['value']};
+                            $r_param_value = ${$r_params['value']};
+                        break;
+                        case "unlink":
+                            unset($params[$r_params['value']]);
+                        break;
+                    }
+                    $rParams[$r_param_name] = $r_param_value;
+                } else continue;
+            }
+        }
 
-    $options['query']['browse'] = 'trash';
-    $trashLink = $this -> url($mainRouteName, $params, $options);
+        if(isset($route['merge_current_params']) && $route['merge_current_params'] === true) {
+            $rParams = array_merge($params, $rParams);
+        }
 
-    $options['query']['browse'] = 'all';
-    $allLink = $this -> url($mainRouteName, $params, $options);
+        $rOptions = array();
+        if(isset($route['options']) && count($route['options'])) {
+            foreach($route['options'] as $rKey => $rOptionType) {
+                $r_type = array();
+                foreach($rOptionType as $r_option_name => $r_options) {
+                    if(isset($r_options['type']) && isset($r_options['value'])) {
+                        switch($r_options['type']) {
+                            case "static":
+                                $r_option_value = $r_options['value'];
+                            break;
+                            case "from_record":
+                                $r_option_value = $record -> $r_options['value'];
+                            break;
+                            case "from_view":
+                                global ${$r_options['value']};
+                                $r_option_value = ${$r_options['value']};
+                            break;
+                            case "unlink":
+                                unset($options[$r_options['value']]);
+                            break;
+                        }
+                        $r_type[$r_option_name] = $r_option_value;
+                    } else continue;
+                }
+                $rOptions[$rKey] = $r_type;
+            }
+        }
+        $rOptions = array_merge($options, $rOptions);
 
-    $params['action'] = 'delete-all';
-    $deleteAllLink = $this -> url($mainRouteName, $params);
+        return $view -> url($route_name, $rParams, $rOptions);          
+
+    }
 ?>
 
 <div class="row">
     <div class="row-12">
         <ul class="nav nav-pills navbar-right">
-            <li class="<?php echo $uri == $indexLink ? 'active' : '' ?>"><a href="<?php echo $indexLink; ?>">
-                <span class="glyphicon glyphicon-ok-circle"></span>Active
-            </a></li>
-            <li class="<?php echo $uri == $disabledLink ? 'active' : '' ?>"><a href="<?php echo $disabledLink; ?>">
-                <span class="glyphicon glyphicon-ban-circle"></span>Disabled
-            </a></li>
-            <li class="<?php echo $uri == $trashLink ? 'active' : '' ?>"><a href="<?php echo $trashLink; ?>">
-                <span class="glyphicon glyphicon-trash"></span>Trash
-            </a></li>
-            <li class="<?php echo $uri == $allLink ? 'active' : '' ?>"><a href="<?php echo $allLink; ?>">All</a></li>
+            <?php 
+            $uri = $_SERVER['REQUEST_URI'];
+            $tabs = "";
+            $activeMode = 'active';
+            foreach($manager['modes'] as $mode_key => $mode) { 
+                $li_class = "";
+                $link = getRouteLink($this, $mode['route'], $params, $options);
+
+                if($uri == $link) {
+                    $activeMode = $mode_key;
+                    $li_class= "active";
+                }
+                $tabs .= '<li class="'.$li_class.'"><a href="'.$link.'">';
+                if(isset($mode['glyph'])) $tabs .= '<span class="glyphicon glyphicon-'.$mode['glyph'].'"></span>';
+                $tabs .= $mode['label']."</a></li>".PHP_EOL;
+            }
+            echo $tabs;
+            ?>
             <li class="dropdown">
                 <a class="dropdown-toggle" data-toggle="dropdown" href="#">
                   Actions <span class="caret"></span>
@@ -83,42 +151,16 @@ if($rows -> getTotalItemCount() > 0) :
     </thead>
     <tbody>
         <?php 
+        $options = $route['options'];
+        $params = $route['params'];
         foreach($rows as $row): 
             $rowClass = array();
             if($row -> deleted == 1) $rowClass[] = 'danger';
             if($row -> status == 0) $rowClass[] = 'warning';
 
-            $options = $route['options'];
             $params['id'] = $row -> id;
             $params['action'] = 'unlock';
             $unlock_link = $this -> url($mainRouteName, $params, $options);
-          
-            $params['action'] = 'edit';
-            $edit_link = $this -> url($mainRouteName, $params, $options);
-          
-            $params['action'] = 'delete';
-            $delete_link = $this -> url($mainRouteName, $params, $options);
-          
-            $params['action'] = 'undelete';
-            $undelete_link = $this -> url($mainRouteName, $params, $options);
-          
-            $params['action'] = 'delete-permanent';
-            $deletePermanent_link = $this -> url($mainRouteName, $params, $options);
-          
-            $params['action'] = 'enable';
-            $enable_link = $this -> url($mainRouteName, $params, $options);
-          
-            $params['action'] = 'disable';
-            $disable_link = $this -> url($mainRouteName, $params, $options);
-          
-            $params['action'] = 'move-up';
-            $moveUp_link = $this -> url($mainRouteName, $params, $options);
-          
-            $params['action'] = 'move-down';
-            $moveDown_link = $this -> url($mainRouteName, $params, $options);
-          
-            //$params['action'] = '';
-            //$_link = $this -> url($mainRouteName, $params, $options);
         ?>
         <tr class="<?php echo implode(" ", $rowClass); ?>" data-id="<?php echo $row -> id; ?>">
             <td>
@@ -127,6 +169,7 @@ if($rows -> getTotalItemCount() > 0) :
                     echo '<a href="'.$unlock_link.'" alt="Unlock"><span class="glyphicon glyphicon-lock"></span></a>';
                 }
             ?>
+            </td>
             <?php 
                 if($manager['thumbnail_field']['active'] == true) { 
                     $imgThumbnail = str_replace("source/", "thumbs/", $row -> $thumbnail_details['field']);
@@ -138,77 +181,25 @@ if($rows -> getTotalItemCount() > 0) :
             ?>
             <td>
                 <?php
-                //If custom links need to be provided generate them
-                if(isset($manager['records']['links']) && count($manager['records']['links'])) {
-                    $extra_links = $manager['records']['links'];
-                    foreach($extra_links as $extra_link) {
-
-                        if(isset($extra_link['route'])) {
-                            $route = $extra_link['route'];
-                            $rParams = array();
-
-                            if($route['merge_current_params'] === true) {
-                                $tParams = $params;    
-                            }
-                            
-                            if(isset($route['params']) && count($route['params'])) {
-                                foreach($route['params'] as $r_param_name => $r_params) {
-                                    if(isset($r_params['type']) && isset($r_params['value'])) {
-                                        switch($r_params['type']) {
-                                            case "static":
-                                                $r_param_value = $r_params['value'];
-                                            break;
-                                            case "from_record":
-                                                $r_param_value = $row -> $r_params['value'];
-                                            break;
-                                            case "unlink":
-                                                unset($tParams[$r_params['value']]);
-                                            break;
-                                        }
-                                        $rParams[$r_param_name] = $r_param_value;
-                                    } else continue;
-                                }
-                            }
-                            
-                            if($route['merge_current_params'] === true) {
-                                $rParams = array_merge($tParams, $rParams);
-                            }
-
-                            $rLink = $this -> url($route['name'], $rParams);
+                $mode = $manager['modes'][$activeMode];
+                if(count($mode['links'])) {
+                    $m_links = array_reverse($mode['links']);
+                    $links_html = "";
+                    foreach($m_links as $mlKey => $mLink) {
+                        if(isset($mLink['type']) && $mLink['type'] == 'from_conditional_record') {
+                            $value = $row -> $mLink['value'];
+                            if(isset($mLink['case'][$value])) {
+                                $mLink = $mLink['case'][$value];
+                            } else continue;
                         }
-                        echo '<a class="btn btn-default btn-sm" href="'.$rLink.'">'.$extra_link['label'].'</a> ';
-                    }
+                        $link = getRouteLink($this, $mLink['route'], $params, $options, $row);
+                        $links_html .= '<a class="btn btn-default btn-sm" href="'.$link.'">';
+                        if(isset($mLink['glyph'])) $links_html .= '<span class="glyphicon glyphicon-'.$mLink['glyph'].'"></span>';
+                        $links_html .= $mLink['label']."</a>".PHP_EOL;
+                    }                    
+                    echo $links_html;
                 }
-
                 ?>
-                <a class="btn btn-default btn-sm" href="<?php echo $edit_link; ?>">
-                    <span class="glyphicon glyphicon-pencil"></span>Edit</a>
-                <?php if($row -> deleted == '0') { ?>
-                    <a class="btn btn-default btn-sm" href="<?php echo $delete_link; ?>">
-                    <span class="glyphicon glyphicon-trash"></span>Delete</a>
-                <?php } else { ?>
-                    <a class="btn btn-default btn-sm" href="<?php echo $undelete_link; ?>">
-                        <span class="glyphicon glyphicon-transfer"></span>UnDelete</a>
-                    <a class="btn btn-default btn-sm" href="<?php echo $deletePermanent_link; ?>">
-                        <span class="glyphicon glyphicon-fire"></span>Delete Permanenty</a>
-                <?php } ?>
-
-                <?php if($row -> deleted != '1') { 
-                    if($row -> status == '0') { ?>
-                        <a class="btn btn-default btn-sm" href="<?php echo $enable_link; ?>">
-                        <span class="glyphicon glyphicon-thumbs-up"></span>Enable</a>
-                    <?php } else { ?>
-                        <a class="btn btn-default btn-sm" href="<?php echo $disable_link; ?>">
-                        <span class="glyphicon glyphicon-thumbs-down"></span>Disable</a>
-                    <?php } 
-                } ?>
-                <?php if($row -> status == '1' && $row -> deleted == '0') { ?>
-                    <a class="btn btn-default btn-sm" href="<?php echo $moveUp_link; ?>">
-                        <span class="glyphicon glyphicon-arrow-up"></span>Move Up</a>
-                    <a class="btn btn-default btn-sm" href="<?php echo $moveDown_link; ?>">
-                        <span class="glyphicon glyphicon-arrow-down"></span>Move Down</a>
-                <?php } ?>
-
             </td>
         </tr>
         <?php endforeach; ?>

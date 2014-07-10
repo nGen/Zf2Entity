@@ -19,7 +19,7 @@ abstract class EntityStatisticsService {
 			}
 		}
 		return $entities_array;
-	}
+	}	
 
 	public function fetchById($id) {
 		if((int) $id) {
@@ -112,15 +112,13 @@ abstract class EntityStatisticsService {
 		return $this -> convertManyToArray($this -> fetchAllDeletedPaginated($where, $order, $joins));
 	}
 
+	public function setDefaultWhereRestriction(Array $where) {
+		return $this -> dbMapper -> setDefaultWhereRestriction($where);
+	}
 
-
-    public function setTitleField($field_name) {
-        return $this -> dbMapper -> setTitleField($field_name);
-    }
-
-    public function getTitleField() {
-    	return $this -> dbMapper -> getTitleField();
-    }	
+	public function getDefaultWhereRestriction() {
+		return $this -> dbMapper -> getDefaultWhereRestriction();
+	}
 
 	protected function saveDefault($data, $entity) {
 		try {
@@ -222,5 +220,18 @@ abstract class EntityStatisticsService {
 		}
 		return false;
     }
+
+	public function setupEntity($hasParent = false, $parent = 0) {
+		$ordering = 1;
+		$pf = $this -> dbMapper -> getPrimaryKeyField();
+		$where = array();
+		if($hasParent) $where['parent'] = $parent;
+		$entities = $this -> convertManyToArray($this -> dbMapper -> fetchAll(false, $where, array(), array(), null, null, null, null, true));
+		foreach($entities as $entity) {
+			$status = $this -> dbMapper -> insertEntityStatistics(null, $entity[$pf], true, false, $ordering);
+			if($hasParent) $this -> setupEntity($hasParent, $entity[$pf]);
+			$ordering++;
+		}
+	}	    
 
 }

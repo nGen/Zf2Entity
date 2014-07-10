@@ -10,11 +10,12 @@ use Zend\Paginator\Adapter\DbSelect;
 
 class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
 
+    protected $mainDbMapper;
     protected $statTableName = "application_entity_statistics";
     protected $primary_key_field = "id";
-    protected $title_field = "title";
     protected $user_entity_id = 0;
-    protected $mainDbMapper;
+    protected $defaultWhereRestriction = array();
+    protected $ordering = "DESC";
 
     protected $statisticsHydrator = null;
 
@@ -44,12 +45,12 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
         return $this -> primary_key_field;
     }
 
-    public function setTitleField($field_name) {
-        $this -> title_field = $field_name;
+    public function setDefaultWhereRestriction(Array $where) {
+        $this -> defaultWhereRestriction = $where;
     }
 
-    public function getTitleField() {
-        return $this -> title_field;
+    public function getDefaultWhereRestriction() {
+        return $this -> defaultWhereRestriction;
     }
 
     /**
@@ -237,6 +238,7 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
             }
             $where['stat.entity_name'] = $entity_name;
         }
+        $where = array_replace_recursive($this -> defaultWhereRestriction, $where);
         $select -> where($where);
         $select -> order($order);
         return $select;
@@ -244,6 +246,7 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
 
     public function fetchAll($paginated = false, $where = array(), $order = array(), $joins = array(), $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null, $unLinked = false) {
         $select = $this -> getFetchSelect($where, $order, $joins, $entity_name, $primary_key_field, $unLinked);
+
         if($paginated) {
             $hydrator = $hydrator ?: $this -> getHydrator();
             $entity_prototype = $entity_prototype ?: $this -> getEntityPrototype();
@@ -270,20 +273,20 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
 
     public function fetchAllActive($paginated = false, $where = array(), $order = array(), $joins = array(), $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null, $unLinked = false) {
         $where['status'] = true;
-        $where['deleted'] = false;
-        $order[] = 'ordering DESC';
+        $where['deleted'] = 0;
+        $order[] = 'ordering '.$this -> ordering;
         return $this -> fetchAll($paginated, $where, $order, $joins, $entity_name, $primary_key_field, $entity_prototype, $hydrator, $unLinked);
     }
 
     public function fetchAllEnabled($paginated = false, $where = array(), $order = array(), $joins = array(), $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null, $unLinked = false) {
         $where['status'] = true;
-        $where['deleted'] = false;
+        $where['deleted'] = 0;
         return $this -> fetchAll($paginated, $where, $order, $joins, $entity_name, $primary_key_field, $entity_prototype, $hydrator, $unLinked);        
     }
 
     public function fetchAllDisabled($paginated = false, $where = array(), $order = array(), $joins = array(), $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null, $unLinked = false) {
-        $where['status'] = false;
-        $where['deleted'] = false;
+        $where['status'] = 0;
+        $where['deleted'] = 0;
         return $this -> fetchAll($paginated, $where, $order, $joins, $entity_name, $primary_key_field, $entity_prototype, $hydrator, $unLinked);  
     }
 
@@ -293,7 +296,7 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
     }
 
     public function fetchAllUnDeleted($paginated = false, $where = array(), $order = array(), $joins = array(), $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null, $unLinked = false) {
-        $where['deleted'] = false;
+        $where['deleted'] = 0;
         return $this -> fetchAll($paginated, $where, $order, $joins, $entity_name, $primary_key_field, $entity_prototype, $hydrator, $unLinked);  
     }
     
@@ -415,7 +418,7 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
         try {
             $predicate = new \Zend\Db\Sql\Where();
             $where[] = $predicate -> greaterThan('entity_ordering', $ordering);
-            $select = $this -> getFetchSelect($where, array('ordering ASC'), $entity_name, $primary_key_field);
+            $select = $this -> getFetchSelect($where, array('ordering '.$this -> ordering == 'DESC' ? 'ASC' : 'DESC'), $entity_name, $primary_key_field);
             $select -> limit(1);
             $entity = $this -> select($select) -> current();
             if($entity) {
@@ -432,7 +435,7 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
         try {
             $predicate = new \Zend\Db\Sql\Where();
             $where[] = $predicate -> lessThan('entity_ordering', $ordering);
-            $select = $this -> getFetchSelect($where, array('ordering DESC'), $entity_name, $primary_key_field);
+            $select = $this -> getFetchSelect($where, array('ordering '.$this -> ordering), $entity_name, $primary_key_field);
             $select -> limit(1);
             $entity = $this -> select($select) -> current();
             if($entity) {
