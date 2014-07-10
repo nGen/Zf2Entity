@@ -120,6 +120,14 @@ abstract class EntityStatisticsService {
 		return $this -> dbMapper -> getDefaultWhereRestriction();
 	}
 
+	public function setDefaultJoinRestriction(Array $joins) {
+		return $this -> dbMapper -> setDefaultJoinRestriction($joins);
+	}
+
+	public function getDefaultJoinRestriction() {
+		return $this -> dbMapper -> getDefaultJoinRestriction();
+	}
+
 	protected function saveDefault($data, $entity) {
 		try {
 			if((int) $data[$this -> dbMapper -> getPrimaryKeyField()] > 0) { $editMode = true; }

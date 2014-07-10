@@ -15,6 +15,7 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
     protected $primary_key_field = "id";
     protected $user_entity_id = 0;
     protected $defaultWhereRestriction = array();
+    protected $defaultJoinRestriction = array();
     protected $ordering = "DESC";
 
     protected $statisticsHydrator = null;
@@ -51,6 +52,14 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
 
     public function getDefaultWhereRestriction() {
         return $this -> defaultWhereRestriction;
+    }
+
+    public function setDefaultJoinRestriction(Array $joins) {
+        $this -> defaultJoinRestriction = $joins;
+    }
+
+    public function getDefaultJoinRestriction() {
+        return $this -> defaultJoinRestriction;
     }
 
     /**
@@ -231,6 +240,10 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
                     "last_modified_on",
                 )
             );
+            $joins = array_replace_recursive($this -> defaultJoinRestriction, $joins);
+            if(count($this -> defaultJoinRestriction)) {
+                //var_dump($joins); exit;
+            }
             if(count($joins)) {
                 foreach($joins as $join) {
                     $select -> join($join[0], $join[1], $join[2]);
