@@ -1,6 +1,8 @@
 <?php
 namespace nGen\Zf2Entity\Service;
 
+use nGen\Zf2Entity\Model\SharedEntityStatistics;
+
 abstract class EntityStatisticsService {
 	protected $dbMapper;
 
@@ -8,7 +10,7 @@ abstract class EntityStatisticsService {
 		if($entity !== false) {
 			return $this -> dbMapper -> getHydrator() -> extract($entity);
 		}
-		return false;
+		return false;	
 	}
 
 	public function convertManyToArray($entities) {
@@ -240,6 +242,12 @@ abstract class EntityStatisticsService {
 			if($hasParent) $this -> setupEntity($hasParent, $entity[$pf]);
 			$ordering++;
 		}
-	}	    
+	}
+
+	public function isActive(SharedEntityStatistics $entity) {
+		$active = $entity -> getStatus();
+		$deleted = $entity -> getDeleted();
+		return (Boolean)$active && !(Boolean)$deleted;
+	}
 
 }

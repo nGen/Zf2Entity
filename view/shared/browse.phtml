@@ -177,7 +177,27 @@ if($rows -> getTotalItemCount() > 0) :
                     echo "<td><img src=\"$imgThumbnail\" /></td>";
                 }
                 if($manager['title_field']['active'] == true) {
-                    echo "<td>".$this -> escapeHtml($row -> $title_details['field'])."</td>";
+                    echo "<td>";
+                    $title_details = $manager['title_field']['details'];
+                    if($title_details['field'] == '__COMBINED__') {
+                        if(isset($title_details['fields'])) {
+                            $row_title = "";
+                            foreach($title_details['fields'] as $c_field) {
+                                switch($c_field['type']) {
+                                    case "static":
+                                        $row_title .= $c_field['value'];
+                                    break;
+                                    case "from_record":
+                                        $row_title .= $row -> $c_field['value'];
+                                    break;
+                                }
+                            }
+                            echo $row_title;
+                        }
+                    } else {
+                        echo $this -> escapeHtml($row -> $title_details['field']);
+                    }
+                    echo "</td>";
                 }
             ?>
             <td>
