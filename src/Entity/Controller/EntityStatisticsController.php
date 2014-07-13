@@ -7,6 +7,13 @@ use Zend\Mvc\Controller\AbstractActionController;
 abstract class EntityStatisticsController extends AbstractActionController {
 
 	protected $mainService;
+	protected $childService = null;
+	protected $childSettings = array(
+		'restrictions' => array(
+			'permanent-delete' => '0'
+		)
+	);
+
 	protected $messenger;
 	protected $defaultManagerViewData = array(
 			'thumbnail_field' => array(
@@ -428,6 +435,14 @@ abstract class EntityStatisticsController extends AbstractActionController {
 		if($initStatus  !== true) { return $initStatus; }
 
 		$id = (int) $this -> params() -> fromRoute('id', 0);
+		if(isset($this -> childSettings['restrictions']['permanent-delete']) && $this -> childService !== null) {
+			$childEntries = $this -> childService -> fetchAllByParent($id);
+			if($childEntries -> count() !== $this -> childSettings['restrictions']['permanent-delete']) {
+				$this -> messenger -> addErrorMessage("{$this -> viewData['title']} with id: $id cannot be permanently deleted because it is not empty.");
+				return $this -> redirectToMain();		
+			};
+		}
+		
 		if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
 			$response = $this -> mainService -> permanentDelete($id);
 			if($response === true) {
