@@ -21,7 +21,23 @@ abstract class EntityStatisticsService {
 			}
 		}
 		return $entities_array;
-	}	
+	}
+
+	public function hasTaggingSupport() {
+		return (Boolean)$this -> dbMapper -> taggingSupport;
+	}
+
+	public function hasFlagingSupport() {
+		return (Boolean)$this -> dbMapper -> flagingSupport;
+	}
+
+	public function hasRatingSupport() {
+		return (Boolean)$this -> dbMapper -> ratingSupport;
+	}
+
+	public function hasVotingSupport() {
+		return (Boolean)$this -> dbMapper -> votingSupport;
+	}
 
 	public function fetchById($id) {
 		if((int) $id) {
@@ -140,7 +156,7 @@ abstract class EntityStatisticsService {
 			} else {
 				$result = $this -> dbMapper -> insertEntity($entity);
 			}
-			return true;			
+			return $result;			
 		} catch(\Zend\Db\Adapter\Exception\InvalidQueryException $e) {
 			return false;
 		}
@@ -211,8 +227,13 @@ abstract class EntityStatisticsService {
 
     public function isCurrentUserTheLocker($id) {
 		$entity = $this -> fetchById($id);
-		if($entity) {
-			return $this -> dbMapper -> getUserEntityId() == $entity -> getLockedBy() ? true : false;
+		if($entity && $entity -> getLocked()) {
+			$log = $this -> dbMapper -> fetchEntityLog(null, $entity -> id, "locked");
+			if($log !== false) {
+				return $this -> dbMapper -> getUserEntityId() == $log -> getUser() ? true : false;
+			} else {
+				throw new \RuntimeException("Locked Log could not be fetched");
+			}
 		}
 		return false;
     }
@@ -249,5 +270,32 @@ abstract class EntityStatisticsService {
 		$deleted = $entity -> getDeleted();
 		return (Boolean)$active && !(Boolean)$deleted;
 	}
+
+	public function fetchCreatedLog($id) {
+		return $this -> dbMapper -> fetchEntityLog(null, $id, 'created');
+	}
+
+	public function fetchTagById($id) {
+		return $this -> dbMapper -> fetchTagById($id);
+	}
+
+	public function fetchTagsByEntityId($id) {
+		return $this -> dbMapper -> fetchEntityTags(null, $id);
+	}
+
+	public function fetchTagsByEntityIdAsArray($id) {
+		return $this -> convertManyToArray($this -> fetchTagsByEntityId($id));
+	}
+
+	public function fetchTagsNameByEntityIdAsArray($id) {
+    	$tags = $this -> fetchTagsByEntityIdAsArray($id);
+    	$tagArray = array();
+    	foreach($tags as $tag) {
+    		$tag = $this -> fetchTagById($tag['tag_id']);
+    		$tagArray[] = $tag -> getName();
+    	}
+    	return $tagArray;
+	}
+
 
 }

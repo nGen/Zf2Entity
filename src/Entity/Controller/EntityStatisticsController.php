@@ -15,7 +15,7 @@ abstract class EntityStatisticsController extends AbstractActionController {
 	);
 
 	protected $messenger;
-	protected $defaultManagerViewData = array(
+	protected $defaultManagerViewData = array(	
 			'thumbnail_field' => array(
 				'active' => false,
 			),
@@ -325,27 +325,35 @@ abstract class EntityStatisticsController extends AbstractActionController {
 	}
 
 	protected function redirectToMain($params = array(), $query = array()) {
-		$query = array_merge($query, $this -> params() -> fromQuery());
+		$query = array_replace_recursive($this -> params() -> fromQuery(), $query);
 		$options = array("query" => $query);
-		$params = array_merge($params, $this -> params() -> fromRoute());
+		$params = array_replace_recursive($this -> params() -> fromRoute(), $params);
 		$params['action'] = 'index';
 		unset($params['id']);
 		return $this -> redirect() -> toRoute($this -> viewData['mainRouteName'], $params, $options);		
 	}
 
 	protected function redirectToCurrent($params = array(), $query = array()) {
-		$query = array_merge($query, $this -> params() -> fromQuery());
+		$query = array_replace_recursive($this -> params() -> fromQuery(), $query);
 		$options = array("query" => $query);
-		$params = array_merge($params, $this -> params() -> fromRoute());
+		$params = array_replace_recursive($this -> params() -> fromRoute(), $params);
 		return $this -> redirect() -> toRoute($this -> viewData['mainRouteName'], $params, $options);		
 	}
 
 	protected function getViewModel($viewData = null) {
 		if(!$viewData) $viewData = $this -> viewData;		
 		$viewData = array_replace_recursive($this -> defaultViewData, $viewData);
-		$viewData['route']['params'] = array_replace_recursive($this -> params() -> fromRoute(), $viewData['route']['params']);
+		$params = array_replace_recursive($this -> params() -> fromRoute(), $viewData['route']['params']);
+		$viewData['route']['params'] = $params;
 		$viewData['route']['options']['query'] = array_replace_recursive($this -> params() -> fromQuery(), $viewData['route']['options']['query']);
-		return new ViewModel($viewData);
+		$viewModel = new ViewModel($viewData);
+
+		//If layout file is provided via route parameters then apply it
+		if(isset($params['layout_file'])) { $this->layout($params['layout_file']); }
+
+		//If Template file is provided via Params then apply it
+		if(isset($params['template_file'])) { $viewModel->setTemplate($params['template_file']); }
+		return $viewModel;
 	}
 
 	abstract protected function init();
