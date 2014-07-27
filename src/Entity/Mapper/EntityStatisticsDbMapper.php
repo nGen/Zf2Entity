@@ -258,9 +258,8 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
         try {
             $statEntity = $this -> getStatisticsHydrator() -> hydrate($data, new EntityStatistics());
             $result = parent::insert($statEntity, $this -> statTableName, $this -> getStatisticsHydrator());
-            return $result;
+            return true;
         } catch(\Exception $e) {
-            echo $e -> getMessage();
             return false;
         }
     }
@@ -272,7 +271,6 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
             $this -> insertEntityLog($entity_name, $primary_key_value, "modified");
             return true;
         } catch(\Exception $e) {
-            echo $e -> getMessage();
             return false;
         }
     }
@@ -299,8 +297,13 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
             "user" => $this -> user_entity_id,
             "user_ip" => $this -> getCurrentIp()
         );
-        $log = $this -> getLogsHydrator() -> hydrate($logData, new EntityLog());
-        return $result = parent::insert($log, $this -> logTableName, $this -> getLogsHydrator());
+        try {
+            $log = $this -> getLogsHydrator() -> hydrate($logData, new EntityLog());
+            $result = parent::insert($log, $this -> logTableName, $this -> getLogsHydrator());
+            return true;
+        } catch(\Exception $e) {
+            return false;
+        }
     }
 
     public function updateEntityLog($entity_name = null, $primary_key_value, $event_name, $event_value = "", $event_time = null) {
@@ -319,8 +322,12 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
             "entity_primary_key" => $primary_key_value,
             "event_name" => $event_name,
         );
-
-        return $result = parent::updateField($data, $where, $this -> logTableName);
+        try {
+            $result = parent::updateField($data, $where, $this -> logTableName);
+            return true;
+        } catch(\Exception $e) {
+            return false;
+        }
     }
 
     public function deleteEntityLog($entity_name = null, $primary_key_value, $event_name) {
@@ -330,7 +337,12 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
             "entity_primary_key" => $primary_key_value,
             "event_name" => $event_name
         );
-        return $result = parent::delete($where, $this -> logTableName);
+        try {
+            $result = parent::delete($where, $this -> logTableName);
+            return true;
+        } catch(\Exception $e) {
+            return false;
+        }
     }    
 
     public function getFetchSelect(Array $where = array(), Array $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $unLinked = false) {
