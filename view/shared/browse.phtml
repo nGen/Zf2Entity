@@ -172,10 +172,12 @@ if($rows -> getTotalItemCount() > 0) :
             ?>
             </td>
             <?php 
+                //Thumbnail
                 if($manager['thumbnail_field']['active'] == true) { 
                     $imgThumbnail = str_replace("source/", "thumbs/", $row -> $thumbnail_details['field']);
                     echo "<td><img src=\"$imgThumbnail\" /></td>";
                 }
+                //Title
                 if($manager['title_field']['active'] == true) {
                     echo "<td>";
                     $title_details = $manager['title_field']['details'];
@@ -201,7 +203,7 @@ if($rows -> getTotalItemCount() > 0) :
                 }
             ?>
             <td>
-                <?php
+            <?php
                 $options = $route['options'];
                 $params = $route['params'];
                 $mode = $manager['modes'][$activeMode];
@@ -223,7 +225,7 @@ if($rows -> getTotalItemCount() > 0) :
                     }                    
                     echo $links_html;
                 }
-                ?>
+            ?>
             </td>
         </tr>
         <?php endforeach; ?>

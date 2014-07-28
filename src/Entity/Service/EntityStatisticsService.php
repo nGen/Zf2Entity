@@ -46,16 +46,20 @@ abstract class EntityStatisticsService {
 		return false;
 	}
 	
+	public function fetchByIdAsArray($id) { 
+		return $this -> convertToArray($this -> fetchById($id)); 
+	}
+	
 	public function fetchAsArray($id) { 
 		return $this -> convertToArray($this -> fetchById($id)); 
 	}
 
-	public function fetchAll($where = array(), $order = array(), $joins = array()) { 
+	public function fetchAll($where = array(), $order = array(), $joins = array()) {
 		return $this -> dbMapper -> fetchAll(false, $where, $order, $joins); 
 	}
 	
 	public function fetchAllAsArray($where = array(), $order = array(), $joins = array()) {
-		return $this -> convertManyToArray($this -> fetchAll(false, $where, $order, $joins));
+		return $this -> convertManyToArray($this -> fetchAll($where, $order, $joins));
 	}
 
 	public function fetchAllPaginated($where = array(), $order = array(), $joins = array()) {
@@ -156,6 +160,26 @@ abstract class EntityStatisticsService {
 			} else {
 				$result = $this -> dbMapper -> insertEntity($entity);
 			}
+			return $result;			
+		} catch(\Zend\Db\Adapter\Exception\InvalidQueryException $e) {
+			return false;
+		}
+	}
+
+	protected function insertOrUpdate($data, $entity) {
+		try {
+			$entity = $this -> dbMapper -> getHydrator() -> hydrate($data, $entity);
+			$result = $this -> dbMapper -> insertOrUpdateEntity($entity);
+			return $result;			
+		} catch(\Zend\Db\Adapter\Exception\InvalidQueryException $e) {
+			return false;
+		}
+	}
+
+	protected function updateorInsert($data, $entity) {
+		try {
+			$entity = $this -> dbMapper -> getHydrator() -> hydrate($data, $entity);
+			$result = $this -> dbMapper -> updateOrInsertEntity($entity);
 			return $result;			
 		} catch(\Zend\Db\Adapter\Exception\InvalidQueryException $e) {
 			return false;

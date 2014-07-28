@@ -382,7 +382,6 @@ abstract class EntityStatisticsController extends AbstractActionController {
 
 	public function indexAction() {
 		$initStatus = $this -> init();
-
 		if($initStatus  !== true) { return $initStatus; }
 
 		return $this -> DefaultIndexAction();
@@ -447,7 +446,7 @@ abstract class EntityStatisticsController extends AbstractActionController {
 			$childEntries = $this -> childService -> fetchAllByParent($id);
 			if($childEntries -> count() !== $this -> childSettings['restrictions']['permanent-delete']) {
 				$this -> messenger -> addErrorMessage("{$this -> viewData['title']} with id: $id cannot be permanently deleted because it is not empty.");
-				return $this -> redirectToMain();		
+				return $this -> redirectToMain();
 			};
 		}
 		

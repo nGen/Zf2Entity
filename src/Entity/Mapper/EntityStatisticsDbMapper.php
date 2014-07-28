@@ -1,6 +1,7 @@
 <?php
 namespace nGen\Zf2Entity\Mapper;
 
+use nGen\Zf2Entity\Model\SharedEntityStatistics;
 use nGen\Zf2Entity\Model\EntityStatistics;
 use nGen\Zf2Entity\Model\EntityLog;
 use nGen\Zf2Entity\Model\Tag;
@@ -177,41 +178,78 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
     }
 
     public function insertEntity($entity, $entity_name = null, HydratorInterface $hydrator = null, $noTransaction = false) {
+        //var_dump($entity instanceof SharedEntityStatistics); exit;
         $entity_name = $entity_name ?: $this->tableName;
         if(!$noTransaction) $this -> beginTransaction();
         try {
             $result = $this -> insert($entity, $entity_name, $hydrator);
-            $generated_value = $result->getGeneratedValue(); 
-            if($generated_value > 0) {
-                $entity -> setId($generated_value);
-                $stat_result = $this -> insertEntityStatistics($entity_name, $generated_value, true, false, $this -> getHighestOrdering()+1);
-                $log_result = $this -> insertEntityLog($entity_name, $generated_value, "created");
-                if($stat_result && $log_result && !$noTransaction) $this -> commit();
-                return $stat_result && $log_result;
+
+            $primary_key_value = $entity -> {$this -> getPrimaryKeyField()};
+            if($primary_key_value < 1) {
+                $primary_key_value = $result -> getGeneratedValue();
+            }
+
+            if($primary_key_value > 0) {
+                $entity -> {$this -> primary_key_field} = $primary_key_value;
+                if($entity instanceof SharedEntityStatistics) {
+                    $stat_result = $this -> insertEntityStatistics($entity_name, $primary_key_value, true, false, $this -> getHighestOrdering()+1);
+                }
+                $log_result = $this -> insertEntityLog($entity_name, $primary_key_value, "created");
+                $isSuccess = (($entity instanceof SharedEntityStatistics && $stat_result) || !$entity instanceof SharedEntityStatistics) && $log_result;
+                if($isSuccess && !$noTransaction) $this -> commit();
+                return $isSuccess;
             } else {
-                $this -> rollback();
+                if(!$noTransaction) $this -> rollback();
                 return false;
             }
         } catch(\Exception $e) {
-            die($e -> getMessage());
             if(!$noTransaction) $this -> rollback();
             return false;
         }
     }
     
-    public function updateEntity($entity, Array $where = array(), $entity_name = null, HydratorInterface $hydrator = null, $noTransaction = false) {
+    public function updateEntity($entity, Array $where = array(), $entity_name = null, HydratorInterface $hydrator = null, $noTransaction = false) {        
         $entity_name = $entity_name ?: $this->tableName;
         $primary_key_field = $this -> primary_key_field;
         if(!$noTransaction) $this -> beginTransaction();
         try {
+            //Check if Entity Exist or not
+            $tEntity = $this -> fetchOne(array(
+                $this -> getPrimaryKeyField() => $entity -> {$this -> getPrimaryKeyField()}
+            ), array(), $entity_name, null, $entity, $hydrator, $entity instanceof SharedEntityStatistics ? false : true);
+            if($tEntity === false) return false;
+
+            //Proceed with update
             $id = $entity -> $primary_key_field;
-            $where[$primary_key_field] = $id;
+            $where[$primary_key_field] = $id;            
             $result = $this -> updateAll($entity, $where, $entity_name, $hydrator);
             $stat_status = $this -> insertEntityLog($entity_name, $id, 'modified', 'entity');
             if($stat_status && !$noTransaction) $this -> commit();
             return $stat_status;
         } catch(\Exception $e) {
             if(!$noTransaction) $this -> rollback();
+            return false;
+        }
+    }
+
+    public function insertOrUpdateEntity($entity, Array $where = array(), $entity_name = null, HydratorInterface $hydrator = null, $noTransaction = false) {
+        try {
+            if($this -> updateEntity($entity, $where, $entity_name, $hydrator, $noTransaction) === false) {
+                return $this -> insertEntity($entity, $entity_name, $hydrator, $noTransaction);
+            }
+            return true;
+        } catch(\Exception $e) {
+            return false;
+        }
+    }
+
+    public function updateOrInsertEntity($entity, Array $where = array(), $entity_name = null, HydratorInterface $hydrator = null, $noTransaction = false) {
+        try {
+            if($this -> insertEntity($entity, $entity_name, $hydrator, $noTransaction) === false) {
+                return $this -> updateEntity($entity, $where, $entity_name, $hydrator, $noTransaction);
+            }
+            return true;
+        } catch(\Exception $e) {
             return false;
         }
     }
@@ -345,12 +383,13 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
         }
     }    
 
-    public function getFetchSelect(Array $where = array(), Array $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $unLinked = false) {
+    public function getFetchSelect(Array $where = array(), Array $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $entity_prototype = null) {
         $primary_key_field = $primary_key_field ?: $this -> primary_key_field;
         $entity_name = $entity_name ?: $this->tableName;
 
         $select = $this -> getSelect($entity_name);
-        if($unLinked === false) {
+        $entity_prototype = $entity_prototype ?: $this -> getEntityPrototype();
+        if(is_object($entity_prototype) && $entity_prototype instanceof SharedEntityStatistics) {
             $select -> join(
                 array('stat' => $this -> statTableName),
                 "stat.entity_primary_key = ".$entity_name.".".$primary_key_field,
@@ -362,25 +401,26 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
                     "locked",
                 )
             );
-            $joins = array_replace_recursive($this -> defaultJoinRestriction, $joins);
-            if(count($joins)) {
-                foreach($joins as $join) {
-                    $select -> join($join[0], $join[1], $join[2]);
-                }
-            }
             $where['stat.entity_name'] = $entity_name;
         }
-        if($unLinked === false) { 
-            $where = array_replace_recursive($this -> defaultWhereRestriction, $where);
+
+        $joins = array_replace_recursive($this -> defaultJoinRestriction, $joins);
+        if(count($joins)) {
+            foreach($joins as $join) {
+                $select -> join($join[0], $join[1], $join[2]);
+            }
         }
+        
+        $where = array_replace_recursive($this -> defaultWhereRestriction, $where);
+
         $select -> where($where);
         $select -> order($order);
         if($limit !== null) $select -> limit($limit);
         return $select;
     }
 
-    public function fetchAll($paginated = false, Array $where = array(), $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null, $unLinked = false) {
-        $select = $this -> getFetchSelect($where, $order, $joins, $limit, $entity_name, $primary_key_field, $unLinked);
+    public function fetchAll($paginated = false, Array $where = array(), $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null) {
+        $select = $this -> getFetchSelect($where, $order, $joins, $limit, $entity_name, $primary_key_field, $entity_prototype);
 
         if($paginated) {
             $hydrator = $hydrator ?: $this -> getHydrator();
@@ -393,46 +433,46 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
         return $entity;
     }
 
-    public function fetchOne(Array $where = array(), Array $joins = array(), $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null, $unLinked = false) {
-        $select = $this -> getFetchSelect($where, array(), $joins, null, $entity_name, $primary_key_field, $unLinked);
+    public function fetchOne(Array $where = array(), Array $joins = array(), $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null) {
+        $select = $this -> getFetchSelect($where, array(), $joins, null, $entity_name, $primary_key_field, $entity_prototype);
         $entity = $this -> select($select, $entity_prototype, $hydrator) -> current();
         return $entity; 
     }
            
-    public function fetchById($id, Array $where = array(), Array $joins = array(), $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null, $unLinked = false) { 
+    public function fetchById($id, Array $where = array(), Array $joins = array(), $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null) { 
         $primary_key_field = $primary_key_field ?: $this -> primary_key_field;
         $entity_name = $entity_name ?: $this->tableName; 
         $where[$entity_name.".".$primary_key_field] = $id;
-        return $this -> fetchOne($where, $joins, $entity_name, $primary_key_field, $entity_prototype, $hydrator, $unLinked);
+        return $this -> fetchOne($where, $joins, $entity_name, $primary_key_field, $entity_prototype, $hydrator);
     }
 
-    public function fetchAllActive($paginated = false, Array $where = array(), $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null, $unLinked = false) {
+    public function fetchAllActive($paginated = false, Array $where = array(), $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null) {
         $where['status'] = true;
         $where['deleted'] = 0;
         $order[] = 'ordering '.$this -> ordering;
-        return $this -> fetchAll($paginated, $where, $order, $joins, $limit, $entity_name, $primary_key_field, $entity_prototype, $hydrator, $unLinked);
+        return $this -> fetchAll($paginated, $where, $order, $joins, $limit, $entity_name, $primary_key_field, $entity_prototype, $hydrator);
     }
 
-    public function fetchAllEnabled($paginated = false, Array $where = array(), $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null, $unLinked = false) {
+    public function fetchAllEnabled($paginated = false, Array $where = array(), $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null) {
         $where['status'] = true;
         $where['deleted'] = 0;
-        return $this -> fetchAll($paginated, $where, $order, $joins, $limit, $entity_name, $primary_key_field, $entity_prototype, $hydrator, $unLinked);        
+        return $this -> fetchAll($paginated, $where, $order, $joins, $limit, $entity_name, $primary_key_field, $entity_prototype, $hydrator);        
     }
 
-    public function fetchAllDisabled($paginated = false, Array $where = array(), $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null, $unLinked = false) {
+    public function fetchAllDisabled($paginated = false, Array $where = array(), $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null) {
         $where['status'] = 0;
         $where['deleted'] = 0;
-        return $this -> fetchAll($paginated, $where, $order, $joins, $limit, $entity_name, $primary_key_field, $entity_prototype, $hydrator, $unLinked);  
+        return $this -> fetchAll($paginated, $where, $order, $joins, $limit, $entity_name, $primary_key_field, $entity_prototype, $hydrator);  
     }
 
-    public function fetchAllDeleted($paginated = false, Array $where = array(), $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null, $unLinked = false) {
+    public function fetchAllDeleted($paginated = false, Array $where = array(), $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null) {
         $where['deleted'] = true;
-        return $this -> fetchAll($paginated, $where, $order, $joins, $limit, $entity_name, $primary_key_field, $entity_prototype, $hydrator, $unLinked);  
+        return $this -> fetchAll($paginated, $where, $order, $joins, $limit, $entity_name, $primary_key_field, $entity_prototype, $hydrator);  
     }
 
-    public function fetchAllUnDeleted($paginated = false, Array $where = array(), $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null, $unLinked = false) {
+    public function fetchAllUnDeleted($paginated = false, Array $where = array(), $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null) {
         $where['deleted'] = 0;
-        return $this -> fetchAll($paginated, $where, $order, $joins, $limit, $entity_name, $primary_key_field, $entity_prototype, $hydrator, $unLinked);  
+        return $this -> fetchAll($paginated, $where, $order, $joins, $limit, $entity_name, $primary_key_field, $entity_prototype, $hydrator);  
     }
     
     public function delete($id, $where = array(), $entity_name = null, $primary_key_field = null) {
