@@ -395,7 +395,7 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
                 "stat.entity_primary_key = ".$entity_name.".".$primary_key_field,
                 array(
                     "ordering" => "entity_ordering",
-                    "views",
+                "views",
                     "status",
                     "deleted",      
                     "locked",
@@ -419,9 +419,32 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
         return $select;
     }
 
+    public function attachActive($select, $entity_name = null, $primary_key_field = null) {
+        $primary_key_field = $primary_key_field ?: $this -> primary_key_field;
+        $entity_name = $entity_name ?: $this->tableName;
+
+        $select -> join(
+            array('stat' => $this -> statTableName),
+            "stat.entity_primary_key = ".$entity_name.".".$primary_key_field,
+            array(
+                "ordering" => "entity_ordering",
+                "views",
+                "status",
+                "deleted",      
+                "locked",
+            )
+        );
+
+        $where['stat.entity_name'] = $entity_name;
+        $where['status'] = true;
+        $where['deleted'] = 0;
+        $select -> where($where);
+        return $select;       
+    }
+
     public function fetchAll($paginated = false, Array $where = array(), $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null) {
         $select = $this -> getFetchSelect($where, $order, $joins, $limit, $entity_name, $primary_key_field, $entity_prototype);
-
+        echo $this -> getSQLString($select);
         if($paginated) {
             $hydrator = $hydrator ?: $this -> getHydrator();
             $entity_prototype = $entity_prototype ?: $this -> getEntityPrototype();
