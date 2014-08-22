@@ -383,7 +383,7 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
         }
     }    
 
-    public function getFetchSelect(Array $where = array(), Array $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $entity_prototype = null) {
+    public function getFetchSelect(Array $where = array(), Array $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $entity_prototype = null, $restrictions = true) {
         $primary_key_field = $primary_key_field ?: $this -> primary_key_field;
         $entity_name = $entity_name ?: $this->tableName;
 
@@ -395,7 +395,7 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
                 "stat.entity_primary_key = ".$entity_name.".".$primary_key_field,
                 array(
                     "ordering" => "entity_ordering",
-                "views",
+                    "views",
                     "status",
                     "deleted",      
                     "locked",
@@ -403,19 +403,24 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
             );
             $where['stat.entity_name'] = $entity_name;
         }
+        if($restrictions === true) {
+            $joins = array_replace_recursive($this -> defaultJoinRestriction, $joins);
+        }
 
-        $joins = array_replace_recursive($this -> defaultJoinRestriction, $joins);
         if(count($joins)) {
             foreach($joins as $join) {
                 $select -> join($join[0], $join[1], $join[2]);
             }
         }
-        
-        $where = array_replace_recursive($this -> defaultWhereRestriction, $where);
 
+        if($restrictions === true) {
+            $where = array_replace_recursive($this -> defaultWhereRestriction, $where);
+        }
         $select -> where($where);
         $select -> order($order);
         if($limit !== null) $select -> limit($limit);
+
+        echo $this -> getSQLString($select); echo "<br /><br />";
         return $select;
     }
 
@@ -444,7 +449,6 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
 
     public function fetchAll($paginated = false, Array $where = array(), $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null) {
         $select = $this -> getFetchSelect($where, $order, $joins, $limit, $entity_name, $primary_key_field, $entity_prototype);
-        echo $this -> getSQLString($select);
         if($paginated) {
             $hydrator = $hydrator ?: $this -> getHydrator();
             $entity_prototype = $entity_prototype ?: $this -> getEntityPrototype();
@@ -456,11 +460,12 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
         return $entity;
     }
 
-    public function fetchOne(Array $where = array(), Array $joins = array(), $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null) {
-        $select = $this -> getFetchSelect($where, array(), $joins, null, $entity_name, $primary_key_field, $entity_prototype);
+    public function fetchOne(Array $where = array(), Array $joins = array(), $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null, $restrictions = true) {
+        $select = $this -> getFetchSelect($where, array(), $joins, null, $entity_name, $primary_key_field, $entity_prototype, $restrictions);
         $entity = $this -> select($select, $entity_prototype, $hydrator) -> current();
         return $entity; 
     }
+
            
     public function fetchById($id, Array $where = array(), Array $joins = array(), $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null) { 
         $primary_key_field = $primary_key_field ?: $this -> primary_key_field;
