@@ -321,7 +321,7 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
             "entity_primary_key" => $primary_key_value,
             "event_name" => $event_name
         );
-        return $this -> fetchOne($where, array(), $this -> logTableName, null, new EntityLog(), $this -> getLogsHydrator(), true);
+        return $this -> fetchOne($where, array(), $this -> logTableName, null, new EntityLog(), $this -> getLogsHydrator(), false);
     }
 
     public function insertEntityLog($entity_name = null, $primary_key_value, $event_name, $event_value = "", $event_time = null) {
