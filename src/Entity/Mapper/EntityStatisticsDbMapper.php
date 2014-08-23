@@ -419,8 +419,6 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
         $select -> where($where);
         $select -> order($order);
         if($limit !== null) $select -> limit($limit);
-
-        echo $this -> getSQLString($select); echo "<br /><br />";
         return $select;
     }
 
