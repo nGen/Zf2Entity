@@ -194,7 +194,7 @@ if($rows -> getTotalItemCount() > 0) :
                                     break;
                                 }
                             }
-                            echo $row_title;
+                            echo $row_title . $title_details['separator'] ?: '';
                         }
                     } else {
                         echo $this -> escapeHtml($row -> $title_details['field']);
