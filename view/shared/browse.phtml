@@ -192,9 +192,10 @@ if($rows -> getTotalItemCount() > 0) :
                                     case "from_record":
                                         $row_title .= $row -> $c_field['value'];
                                     break;
-                                }
+                                }                            
+                                $row_title .= $title_details['separator'] ?: '';
                             }
-                            echo $row_title . $title_details['separator'] ?: '';
+                            echo $row_title;
                         }
                     } else {
                         echo $this -> escapeHtml($row -> $title_details['field']);
