@@ -147,7 +147,6 @@ if($rows -> getTotalItemCount() > 0) :
             }
 
             ?>
-            <th>&nbsp;</th>
         </tr>
     </thead>
     <tbody>
@@ -155,7 +154,7 @@ if($rows -> getTotalItemCount() > 0) :
         $options = $route['options'];
         $params = $route['params'];
         foreach($rows as $row): 
-            $rowClass = array();
+            $rowClass = array('record-row');
             if($row -> deleted == 1) $rowClass[] = 'danger';
             if($row -> status == 0) $rowClass[] = 'warning';
 
@@ -164,7 +163,7 @@ if($rows -> getTotalItemCount() > 0) :
             $unlock_link = $this -> url($mainRouteName, $params, $options);
         ?>
         <tr class="<?php echo implode(" ", $rowClass); ?>" data-id="<?php echo $row -> id; ?>">
-            <td>
+            <td class="lock-cell">
             <?php
                 if($row -> locked == 1) {
                     echo '<a href="'.$unlock_link.'" alt="Unlock"><span class="glyphicon glyphicon-lock"></span></a>';
@@ -172,60 +171,61 @@ if($rows -> getTotalItemCount() > 0) :
             ?>
             </td>
             <?php 
-                //Thumbnail
-                if($manager['thumbnail_field']['active'] == true) { 
-                    $imgThumbnail = str_replace("source/", "thumbs/", $row -> $thumbnail_details['field']);
-                    echo "<td><img src=\"$imgThumbnail\" /></td>";
-                }
-                //Title
-                if($manager['title_field']['active'] == true) {
-                    echo "<td>";
-                    $title_details = $manager['title_field']['details'];
-                    if($title_details['field'] == '__COMBINED__') {
-                        if(isset($title_details['fields'])) {
-                            $row_title = "";
-                            foreach($title_details['fields'] as $c_field) {
-                                switch($c_field['type']) {
-                                    case "static":
-                                        $row_title .= $c_field['value'];
-                                    break;
-                                    case "from_record":
-                                        $row_title .= $row -> $c_field['value'];
-                                    break;
-                                }                            
-                                $row_title .= $title_details['separator'] ?: '';
-                            }
-                            echo $row_title;
-                        }
-                    } else {
-                        echo $this -> escapeHtml($row -> $title_details['field']);
-                    }
-                    echo "</td>";
-                }
-            ?>
-            <td>
-            <?php
-                $options = $route['options'];
-                $params = $route['params'];
-                $mode = $manager['modes'][$activeMode];
-                if(count($mode['links'])) {
-                    $m_links = array_reverse($mode['links']);
-                    $links_html = "";
-                    foreach($m_links as $mlKey => $mLink) {
-                        if(isset($mLink['type']) && $mLink['type'] == 'from_conditional_record') {
-                            $value = $row -> $mLink['value'];
-                            if(isset($mLink['case'][$value])) {
-                                $mLink = $mLink['case'][$value];
-                            } else continue;
-                        }
+            //Thumbnail
+            if($manager['thumbnail_field']['active'] == true) { 
+                $imgThumbnail = str_replace("source/", "thumbs/", $row -> $thumbnail_details['field']);
+                echo "<td><img src=\"$imgThumbnail\" /></td>";
+            }
 
-                        $link = getRouteLink($this, $mLink['route'], $params, $options, $row);
-                        $links_html .= '<a class="btn btn-default btn-sm" href="'.$link.'">';
-                        if(isset($mLink['glyph'])) $links_html .= '<span class="glyphicon glyphicon-'.$mLink['glyph'].'"></span>';
-                        $links_html .= $mLink['label']."</a>".PHP_EOL;
-                    }                    
-                    echo $links_html;
+
+            echo "<td>";
+            //Title
+            if($manager['title_field']['active'] == true) {
+                $title_details = $manager['title_field']['details'];
+                if($title_details['field'] == '__COMBINED__') {
+                    if(isset($title_details['fields'])) {
+                        $row_title = "";
+                        foreach($title_details['fields'] as $c_field) {
+                            switch($c_field['type']) {
+                                case "static":
+                                    $row_title .= $c_field['value'];
+                                break;
+                                case "from_record":
+                                    $row_title .= $row -> $c_field['value'];
+                                break;
+                            }
+                            $row_title .= $title_details['separator'] ?: '';
+                        }
+                        echo $row_title;
+                    }
+                } else {
+                    echo $this -> escapeHtml($row -> $title_details['field']);
                 }
+            }
+
+            $options = $route['options'];
+            $params = $route['params'];
+            $mode = $manager['modes'][$activeMode];
+            if(count($mode['links'])) {
+                $m_links = array_reverse($mode['links']);
+                $links_html = '<div class="controls-btn btn-group">';
+                foreach($m_links as $mlKey => $mLink) {
+                    if(isset($mLink['type']) && $mLink['type'] == 'from_conditional_record') {
+                        $value = $row -> $mLink['value'];
+                        if(isset($mLink['case'][$value])) {
+                            $mLink = $mLink['case'][$value];
+                        } else continue;
+                    }
+
+                    $link = getRouteLink($this, $mLink['route'], $params, $options, $row);
+                    $links_html .= '<a class="btn btn-default btn-sm" href="'.$link.'" title="'.$mLink['label'].'">';
+                    if(isset($mLink['glyph'])) $links_html .= '<span class="glyphicon glyphicon-'.$mLink['glyph'].'"></span>';
+                    $links_html .= " ".$mLink['label']."</a>".PHP_EOL;
+                    //$links_html .= "</a>".PHP_EOL;
+                }
+                $links_html .= '</div>';
+                echo $links_html;
+            }
             ?>
             </td>
         </tr>
@@ -253,3 +253,25 @@ if($rows -> getTotalItemCount() > 0) :
 else:
     echo "<div class=\"well well-sm\">No Records Found</div>";
 endif;
+
+$this -> headStyle() -> appendStyle(<<<STYLE
+    tr.record-row td {
+        position: relative;
+    }
+    tr.record-row td.lock-cell {
+        width: 16px;
+    }
+    tr.record-row .controls-btn {
+        display: none;
+        position: absolute;
+        right: 5px;
+        top: 4px;
+    }
+    tr.record-row .controls-btn .btn-sm {
+        padding: 2px 8px;
+    }
+    tr.record-row:hover .controls-btn {
+        display: block;
+    }
+STYLE
+);
