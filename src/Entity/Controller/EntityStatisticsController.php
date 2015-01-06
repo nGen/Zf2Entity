@@ -341,9 +341,14 @@ abstract class EntityStatisticsController extends AbstractActionController {
 	}
 
 	protected function getViewModel($viewData = null) {
-		if(!$viewData) $viewData = $this -> viewData;		
+		if(!$viewData) $viewData = $this -> viewData;
 		$viewData = array_replace_recursive($this -> defaultViewData, $viewData);
 		$params = array_replace_recursive($this -> params() -> fromRoute(), $viewData['route']['params']);
+		//@todo Needs to be the default way to access the route information
+		if(isset($this -> routeData) && count($this -> routeData)) {
+			$viewData['route']['data'] = $this -> routeData;
+		}
+
 		$viewData['route']['params'] = $params;
 		$viewData['route']['options']['query'] = array_replace_recursive($this -> params() -> fromQuery(), $viewData['route']['options']['query']);
 		$viewModel = new ViewModel($viewData);

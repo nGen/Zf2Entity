@@ -13,45 +13,37 @@
 <?php
     function getRouteLink($view, $route, $params, $options, $record = false) {
 
+        //If route is undefined and has to be derived
         if(is_array($route['name'])) {
             switch($route['name']['type']) {
-                case "from_view":
-                    $route_name = $view -> $route['name']['value'];
-                break;
+                case "from_view": $route_name = $view -> $route['name']['value']; break;                
+                case "from_routeData": $route_name = $view -> route['data'][$route['name']['value']]; break;
             }
         } else { 
             $route_name = $route['name'];
         }
 
+        //Derive the parameters from different sources
         $rParams = array();
         if(isset($route['params']) && count($route['params'])) {
             foreach($route['params'] as $r_param_name => $r_params) {
                 if(isset($r_params['type']) && ($r_params['type'] == 'unset' || isset($r_params['value']))) {
                     $r_param_value = null;
                     switch($r_params['type']) {
-                        case "static":
-                            $r_param_value = $r_params['value'];
-                        break;
-                        case "from_record":
-                            $r_param_value = $record -> $r_params['value'];
-                        break;
-                        case "from_view":
-                            $r_param_value = $view -> $r_params['value'];
-                        break;
-                        case "unset":
-                            unset($params[$r_param_name]);
-                        break;
+                        case "static": $r_param_value = $r_params['value']; break;
+                        case "from_record": $r_param_value = $record -> $r_params['value']; break;
+                        case "from_view": $r_param_value = $view -> $r_params['value']; break;
+                        case "unset": unset($params[$r_param_name]); break;
                     }
                     if($r_param_value) $rParams[$r_param_name] = $r_param_value;
                 } else continue;
             }
         }
 
+        //Check if we should merge current route params with the one provided in the configuration
         if(!isset($route['merge_current_params']) || (isset($route['merge_current_params']) && $route['merge_current_params'] !== false)) {
             $rParams = array_merge($params, $rParams);
-        }
-
-        
+        }        
 
         $rOptions = array();
         if(isset($route['options']) && count($route['options'])) {
@@ -61,19 +53,13 @@
                     if(isset($r_options['type']) && ($r_options['type'] == 'unset' || isset($r_params['value']))) {
                         $r_option_value = null;
                         switch($r_options['type']) {
-                            case "static":
-                                $r_option_value = $r_options['value'];
-                            break;
-                            case "from_record":
-                                $r_option_value = $record -> $r_options['value'];
-                            break;
+                            case "static": $r_option_value = $r_options['value']; break;
+                            case "from_record": $r_option_value = $record -> $r_options['value']; break;
                             case "from_view":
                                 global ${$r_options['value']};
                                 $r_option_value = ${$r_options['value']};
                             break;
-                            case "unset":
-                                unset($options[$r_option_name]);
-                            break;
+                            case "unset": unset($options[$r_option_name]); break;
                         }
                         if($r_option_value) $r_type[$r_option_name] = $r_option_value;
                     } else continue;
@@ -81,10 +67,16 @@
                 $rOptions[$rKey] = $r_type;
             }
         }
+        //Check if we should merge the current route options with the one provided in the configuration
         if(!isset($route['merge_current_options']) || (isset($route['merge_current_options']) && $route['merge_current_options'] !== false)) {
             $rOptions = array_merge($options, $rOptions);
         }
-        return $view -> url($route_name, $rParams, $rOptions);          
+        try {
+            return $view -> url($route_name, $rParams, $rOptions);              
+        } catch(\Zend\Mvc\Router\Exception\InvalidArgumentException $e) {
+            //URL Could not be generated due to invalid argument.
+            return null;
+        }
 
     }
 ?>
@@ -95,7 +87,7 @@
             <?php 
             $uri = $_SERVER['REQUEST_URI'];
             $tabs = "";
-            $activeMode = 'active';
+            $activeMode = 'active';            
             foreach($manager['modes'] as $mode_key => $mode) { 
                 $li_class = "";
                 $link = getRouteLink($this, $mode['route'], $params, $options);
@@ -137,15 +129,10 @@ if($rows -> getTotalItemCount() > 0) :
         <tr>
             <th></th>
             <?php 
-
-            if($manager['thumbnail_field']['active'] == true) { 
-                echo "<th>{$thumbnail_details['label']}</th>";
-            }
-
-            if($manager['title_field']['active'] == true) {
-                echo "<th>{$title_details['label']}</th>";
-            }
-
+            //If Thumbnail Field is present and active show it
+            if($manager['thumbnail_field']['active'] == true) {  echo "<th>{$thumbnail_details['label']}</th>"; }
+            //If Title Field is present and active shot wit
+            if($manager['title_field']['active'] == true) { echo "<th>{$title_details['label']}</th>"; }
             ?>
         </tr>
     </thead>
@@ -180,8 +167,9 @@ if($rows -> getTotalItemCount() > 0) :
 
             echo "<td>";
             //Title
-            if($manager['title_field']['active'] == true) {
-                $title_details = $manager['title_field']['details'];
+            $title_field = $manager['title_field'];
+            if($title_field['active'] == true) {
+                $title_details = $title_field['details'];
                 if($title_details['field'] == '__COMBINED__') {
                     if(isset($title_details['fields'])) {
                         $row_title = "";
@@ -194,13 +182,26 @@ if($rows -> getTotalItemCount() > 0) :
                                     $row_title .= $row -> $c_field['value'];
                                 break;
                             }
-                            $row_title .= $title_details['separator'] ?: '';
+                            $row_title .= !empty($title_details['separator']) ? $title_details['separator']: '';
                         }
-                        echo $row_title;
                     }
                 } else {
-                    echo $this -> escapeHtml($row -> $title_details['field']);
+                    $row_title = $row -> $title_details['field'];
                 }
+                //If it is configured to include link
+                if(isset($title_field['link'])) {
+                    if(is_array($title_field['link'])) {
+                        if(isset($title_field['link']['route'])) {
+                            $link = getRouteLink($this, $title_field['link']['route'], $params, $options, $row);
+                        }
+                    } else {
+                        $link = $title_field['link'];
+                    }
+                    $row_title = '<a href="'.$link.'">'.$this -> escapeHtml($row_title).'</a>';
+                } else {
+                    $row_title = $this -> escapeHtml($row_title);
+                }
+                echo $row_title;
             }
 
             $options = $route['options'];
