@@ -3,6 +3,7 @@ namespace nGen\Zf2Entity\Controller;
 
 use Zend\View\Model\ViewModel;
 use Zend\Mvc\Controller\AbstractActionController;
+use Zend\EventManager\EventManagerInterface;
 
 abstract class EntityStatisticsController extends AbstractActionController {
 
@@ -363,6 +364,22 @@ abstract class EntityStatisticsController extends AbstractActionController {
 
 	abstract protected function init();
 
+	public function setEventManager(EventManagerInterface $events) {
+        parent::setEventManager($events);
+		$controller = $this;
+        $events->attach('dispatch', function ($e) use ($controller) {
+            $request = $e->getRequest();
+            $method  = $request->getMethod();
+
+            if (!in_array($method, array('PUT', 'DELETE', 'PATCH'))) {
+	            //Init
+	            return $this -> init();
+            }
+
+        }, 100); // execute before executing action logic        
+
+    }	
+
 	protected function DefaultIndexAction($where = array(), $order = array(), $joins = array()) {
 		$browseType = $this->params() -> fromQuery('browse', 'active');
 		switch($browseType) {
@@ -386,16 +403,10 @@ abstract class EntityStatisticsController extends AbstractActionController {
 	}
 
 	public function indexAction() {
-		$initStatus = $this -> init();
-		if($initStatus  !== true) { return $initStatus; }
-
 		return $this -> DefaultIndexAction();
 	}
 
 	public function deleteAction() {
-		$initStatus = $this -> init();
-		if($initStatus  !== true) { return $initStatus; }
-
 		$id = (int) $this -> params() -> fromRoute('id', 0);
 		if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
 			$response = $this -> mainService -> delete($id);
@@ -412,9 +423,6 @@ abstract class EntityStatisticsController extends AbstractActionController {
 	}
 
 	public function undeleteAction() {
-		$initStatus = $this -> init();
-		if($initStatus  !== true) { return $initStatus; }
-
 		$id = (int) $this -> params() -> fromRoute('id', 0);
 		if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
 			$response = $this -> mainService -> undelete($id);
@@ -430,9 +438,6 @@ abstract class EntityStatisticsController extends AbstractActionController {
 	}
 
 	public function deleteAllAction() {
-		$initStatus = $this -> init();
-		if($initStatus  !== true) { return $initStatus; }
-
 		$response = $this -> mainService -> deleteAll();
 		if($response === true) {
 			$this -> messenger -> addSuccessMessage("All ".$this -> viewData['pluralTitle']." has been deleted."); 
@@ -443,9 +448,6 @@ abstract class EntityStatisticsController extends AbstractActionController {
 	}	
 
 	public function deletePermanentAction() {
-		$initStatus = $this -> init();
-		if($initStatus  !== true) { return $initStatus; }
-
 		$id = (int) $this -> params() -> fromRoute('id', 0);
 		if(isset($this -> childSettings['restrictions']['permanent-delete']) && $this -> childService !== null) {
 			$childEntries = $this -> childService -> fetchAllByParent($id);
@@ -469,9 +471,6 @@ abstract class EntityStatisticsController extends AbstractActionController {
 	}
 
 	public function enableAction() {
-		$initStatus = $this -> init();
-		if($initStatus  !== true) { return $initStatus; }
-
 		$id = (int) $this -> params() -> fromRoute('id', 0);
 		if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
 			$response = $this -> mainService -> enable($id);
@@ -487,9 +486,6 @@ abstract class EntityStatisticsController extends AbstractActionController {
 	}
 	
 	public function disableAction() {
-		$initStatus = $this -> init();
-		if($initStatus  !== true) { return $initStatus; }
-
 		$id = (int) $this -> params() -> fromRoute('id', 0);
 		if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
 			$response = $this -> mainService -> disable($id);
@@ -505,9 +501,6 @@ abstract class EntityStatisticsController extends AbstractActionController {
 	}	
 
 	public function moveUpAction() {
-		$initStatus = $this -> init();
-		if($initStatus  !== true) { return $initStatus; }
-
 		$id = (int) $this -> params() -> fromRoute('id', 0);
 		if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
 			$response = $this -> mainService -> increaseOrder($id);
@@ -523,9 +516,6 @@ abstract class EntityStatisticsController extends AbstractActionController {
 	}
 
 	public function moveDownAction() {
-		$initStatus = $this -> init();
-		if($initStatus  !== true) { return $initStatus; }
-
 		$id = (int) $this -> params() -> fromRoute('id', 0);
 		if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
 			$response = $this -> mainService -> decreaseOrder($id);
@@ -541,9 +531,6 @@ abstract class EntityStatisticsController extends AbstractActionController {
 	}
 
 	public function unlockAction() {
-		$initStatus = $this -> init();
-		if($initStatus  !== true) { return $initStatus; }
-
 		$id = (int) $this -> params() -> fromRoute('id', 0);
 		if($id > 0 && $this -> mainService -> fetchById($id) !== false) {
 			$response = $this -> mainService -> unlock($id);
@@ -557,4 +544,4 @@ abstract class EntityStatisticsController extends AbstractActionController {
 		}
 		return $this -> redirectToMain();
 	}	
-}
+} 

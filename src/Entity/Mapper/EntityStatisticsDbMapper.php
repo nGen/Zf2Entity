@@ -89,33 +89,24 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
         }
     }
 
-    public function getUserEntityId() {
-        return $this -> user_entity_id;
-    }
+    public function getUserEntityId() { return $this -> user_entity_id; }
+    public function setPrimaryKeyField($field_name) { $this -> primary_key_field = $field_name; }
+
+    public function getPrimaryKeyField() { return $this -> primary_key_field; }
+    public function getEntityName() { return $this -> tableName; }
     
-    public function setPrimaryKeyField($field_name) {
-        $this -> primary_key_field = $field_name;
-    }    
+    public function getStatTableName() { return $this -> statTableName; }
+    public function getLogTableName() { return $this -> logTableName; }
+    public function getTagTableName() { return $this -> tagTableName; }
+    public function getEntityTagTableName() { return $this -> entityTagTableName; }
+    public function getFlagTableName() { return $this -> flagTableName; }
+    public function getEntityFlagTableName() { return $this -> entityFlagTableName; }
 
-    public function getPrimaryKeyField() {
-        return $this -> primary_key_field;
-    }
-
-    public function setDefaultWhereRestriction(Array $where) {
-        $this -> defaultWhereRestriction = $where;
-    }
-
-    public function getDefaultWhereRestriction() {
-        return $this -> defaultWhereRestriction;
-    }
-
-    public function setDefaultJoinRestriction(Array $joins) {
-        $this -> defaultJoinRestriction = $joins;
-    }
-
-    public function getDefaultJoinRestriction() {
-        return $this -> defaultJoinRestriction;
-    }
+    public function setDefaultWhereRestriction(Array $where) { $this -> defaultWhereRestriction = $where; }
+    public function getDefaultWhereRestriction() { return $this -> defaultWhereRestriction; }
+    
+    public function setDefaultJoinRestriction(Array $joins) { $this -> defaultJoinRestriction = $joins; }
+    public function getDefaultJoinRestriction() { return $this -> defaultJoinRestriction; }
 
     /**
      * @param object|array $entity
@@ -447,6 +438,7 @@ class EntityStatisticsDbMapper extends ExtendedAbstractDbMapper {
 
     public function fetchAll($paginated = false, Array $where = array(), $order = array(), Array $joins = array(), $limit = null, $entity_name = null, $primary_key_field = null, $entity_prototype = null, HydratorInterface $hydrator = null) {
         $select = $this -> getFetchSelect($where, $order, $joins, $limit, $entity_name, $primary_key_field, $entity_prototype);
+
         if($paginated) {
             $hydrator = $hydrator ?: $this -> getHydrator();
             $entity_prototype = $entity_prototype ?: $this -> getEntityPrototype();

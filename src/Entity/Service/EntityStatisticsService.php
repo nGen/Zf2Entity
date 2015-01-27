@@ -54,6 +54,7 @@ abstract class EntityStatisticsService {
 		return $this -> convertToArray($this -> fetchById($id)); 
 	}
 
+	//All
 	public function fetchAll($where = array(), $order = array(), $joins = array()) {
 		return $this -> dbMapper -> fetchAll(false, $where, $order, $joins); 
 	}
@@ -134,7 +135,79 @@ abstract class EntityStatisticsService {
 		return $this -> convertManyToArray($this -> fetchAllDeletedPaginated($where, $order, $joins));
 	}
 
+	// Limited	
+	public function fetchLimited($limit, $where = array(), $order = array(), $joins = array()) {
+		$entity_name = $this -> dbMapper -> getEntityName();
+		$joins[] = array(
+	        array('log' => $this -> dbMapper -> getLogTableName()),
+	        "log.entity_primary_key = ".$entity_name.".".$this -> dbMapper -> getPrimaryKeyField(),
+	        array(
+	            "created_on" => "event_time"
+	        )
+	    );
+        $where['log.entity_name'] = $entity_name;
+        $where['log.event_name'] = 'created';
+		return $this -> dbMapper -> fetchAll(false, $where, $order, $joins, $limit);
+	}
+
+	public function fetchLimitedAsArray($limit, $where = array(), $order = array(), $joins = array()) {
+		return $this -> convertManyToArray($this -> fetchLimited($limit, $where, $order, $joins));
+	}
+
+	public function fetchLimitedActive($limit, $where = array(), $order = array(), $joins = array()) {
+		return $this -> dbMapper -> fetchAllActive(false, $where, $order, $joins, $limit);
+	}
+
+	public function fetchLimitedActiveAsArray($limit, $where = array(), $order = array(), $joins = array()) {
+		return $this -> convertManyToArray($this -> fetchLimitedActive($limit, $where, $order, $joins));
+	}
+
+	public function fetchLimitedEnabled($limit, $where = array(), $order = array(), $joins = array()) {
+		return $this -> dbMapper -> fetchAllEnabled(false, $where, $order, $joins, $limit);
+	}
+
+	public function fetchLimitedEnabledAsArray($limit, $where = array(), $order = array(), $joins = array()) {
+		return $this -> convertManyToArray($this -> fetchAllEnabled(false, $where, $order, $joins, $limit));
+	}
+
+	public function fetchLimitedDisabled($limit, $where = array(), $order = array(), $joins = array()) {
+		return $this -> dbMapper -> fetchAllDisabled(false, $where, $order, $joins, $limit);
+	}
+
+	public function fetchLimitedDisabledAsArray($limit, $where = array(), $order = array(), $joins = array()) {
+		return $this -> convertManyToArray($this -> fetchLimitedDisabled($limit, $where, $order, $joins));
+	}
+
+	public function fetchLimitedDeleted($limit, $where = array(), $order = array(), $joins = array()) {
+		return $this -> dbMapper -> fetchAllDeleted(false, $where, $order, $joins, $limit);
+	}
+
+	public function fetchLimitedDeletedAsArray($limit, $where = array(), $order = array(), $joins = array()) {
+		return $this -> convertManyToArray($this -> fetchLimitedDeleted($limit, $where, $order, $joins));
+	}
+
+	//Tagged
+	public function fetchAllByTag($tag_id, $paginated = false, $where = array(), $order = array(), $joins = array()) {
+		$entity_name = $this -> dbMapper -> getEntityName();
+		$joins[] = array(
+	        array('tag' => $this -> dbMapper -> getEntityTagTableName()),
+	        "tag.entity_primary_key = ".$entity_name.".".$this -> dbMapper -> getPrimaryKeyField(),
+	        array(
+	            //"created_on" => "event_time"
+	        )
+	    );
+        $where['tag.entity_name'] = $entity_name;
+        $where['tag.tag_id'] = $tag_id;
+		return $this -> dbMapper -> fetchAll($paginated, $where, $order, $joins);
+	}
+
+	public function fetchAllActivePaginatedByTag($tag, $where = array(), $order = array(), $joins = array()) {
+		return $this -> fetchAllByTag($tag, true, $where, $order, $joins);
+	}
+
+
 	public function setDefaultWhereRestriction(Array $where) {
+
 		return $this -> dbMapper -> setDefaultWhereRestriction($where);
 	}
 
@@ -301,6 +374,10 @@ abstract class EntityStatisticsService {
 
 	public function fetchTagById($id) {
 		return $this -> dbMapper -> fetchTagById($id);
+	}
+
+	public function fetchTagByName($name) {
+		return $this -> dbMapper -> fetchTagByName($name);
 	}
 
 	public function fetchTagsByEntityId($id) {
