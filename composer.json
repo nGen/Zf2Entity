@@ -2,7 +2,7 @@
     "name": "ngen/zf2entity",
     "description": "Entity Management system for ZF2 Module Developement.",
     "type": "Library",
-	"license": "GPL V2",
+	"license": "LGPL-3.0",
     "keywords": [
         "zf2",
 		"ngen",
